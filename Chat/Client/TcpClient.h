@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <boost/asio.hpp>
-#include "ChatInterfaces.h"
+#include "../Client/ClientInterfaces.h"
 
 using namespace boost::asio;
 using ip::tcp;
@@ -24,11 +24,11 @@ public:
         std::cout << "!!!! ~Client(): " << std::endl;
     }
 
-    void execute( std::string addr, int port, std::string greeting )
+    void execute( std::string addr, int port)
     {
         auto endpoint = tcp::endpoint(ip::address::from_string( addr.c_str()), port);
 
-        m_socket.async_connect(endpoint, [this,greeting=greeting] (const boost::system::error_code& error)
+        m_socket.async_connect(endpoint, [this] (const boost::system::error_code& error)
                                {
                                    if ( error )
                                    {
@@ -38,7 +38,6 @@ public:
                                    {
                                        std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
                                        std::ostream os(&(*wrStreambuf));
-                                       os << greeting+"\n";
 
                                        sendMessageToServer( wrStreambuf );
                                    }
@@ -64,7 +63,6 @@ public:
     void readResponse()
     {
         // Receive the response from the server
-
         std::shared_ptr<boost::asio::streambuf> streambuf = std::make_shared<boost::asio::streambuf>();
 
         boost::asio::async_read_until( m_socket, *streambuf, '\n',

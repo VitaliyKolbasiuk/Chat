@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.5)
 
 project(Chat LANGUAGES CXX)
 
@@ -34,19 +34,37 @@ if (WIN32)
     #link_directories(/usr/local/opt/openssl/lib)
 endif()
 
-add_executable(Chat
+add_executable(ThreadTest
   main.cpp
-  Chat.h
+  #Log.h
+  Client/ChatClient.h
+  Client/ClientInterfaces.h
+  Client/TcpClient.h
+  BoostClientServer/Chat.h
   BoostClientServer/Server.h
-  BoostClientServer/ChatClient.h
-  BoostClientServer/TcpClient.h
   BoostClientServer/ChatInterfaces.h
-
 )
-target_link_libraries(Chat Qt${QT_VERSION_MAJOR}::Core)
-
-include(GNUInstallDirs)
-install(TARGETS Chat
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+add_executable(StartServer
+    #Log.h
+    BoostClientServer/server_main.cpp
+    BoostClientServer/Chat.h
+    BoostClientServer/Server.h
+    BoostClientServer/ChatInterfaces.h
 )
+
+add_executable(StartClient
+    #Log.h
+    Client/client_main.cpp
+    Client/Terminal.h
+    Client/ChatClient.h
+    Client/ClientInterfaces.h
+    Client/TcpClient.h
+)
+
+#target_link_libraries(ThreadTest Qt${QT_VERSION_MAJOR}::Core)
+
+#include(GNUInstallDirs)
+#install(TARGETS ThreadTest
+#    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#)

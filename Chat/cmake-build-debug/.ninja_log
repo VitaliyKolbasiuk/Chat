@@ -1,0 +1,8 @@
+# ninja log v5
+4	285	7178091072059555	Chat_autogen/timestamp	8d2dd8e11d433bb7
+4	285	7178091072059555	Chat_autogen/mocs_compilation.cpp	8d2dd8e11d433bb7
+4	285	7178091072059555	C:/c++ projects/Chat/Chat/cmake-build-debug/Chat_autogen/timestamp	8d2dd8e11d433bb7
+4	285	7178091072059555	C:/c++ projects/Chat/Chat/cmake-build-debug/Chat_autogen/mocs_compilation.cpp	8d2dd8e11d433bb7
+286	391	7178091073798061	CMakeFiles/Chat.dir/Chat_autogen/mocs_compilation.cpp.obj	181cd5df73d6f5c3
+313	10000	7178091169776476	CMakeFiles/Chat.dir/main.cpp.obj	42fccafad1a4826c
+10011	10622	7178091175854896	Chat.exe	d1448a2362cf1cd4
