@@ -43,8 +43,10 @@ public:
         {
             std::string username;
             std::string message;
+
             std::getline(input, message, ';');
             std::getline(input, username, ';');
+
             if (username != m_chatClientName)
             {
                 std::cout << '[' << username << "]: " << message << std::endl;
@@ -59,14 +61,13 @@ public:
     {
         std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
         std::ostream os(&(*wrStreambuf));
-        std::string output = message + m_chatRoomName + ";" + m_chatClientName + ";";
-        os << output + '\n';
+        os << message + m_chatRoomName + ";" + m_chatClientName + ";\n";
         m_tcpClient->sendMessageToServer(wrStreambuf);
     }
 
     virtual void closeConnection() override
     {
-        sendUserMessage(EXIT_THE_CHAT_CMD ";" + m_chatRoomName + ";");
-        exit(1);
+        sendUserMessage(EXIT_THE_CHAT_CMD ";");
+        m_tcpClient->closeConnection();
     }
 };

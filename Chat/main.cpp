@@ -4,7 +4,7 @@
 #include "Client/ClientInterfaces.h"
 #include "Client/TcpClient.h"
 #include "BoostClientServer/ChatInterfaces.h"
-#include "BoostClientServer/Server.h"
+#include "BoostClientServer/Server.cpp"
 #include "BoostClientServer/Chat.h"
 
 int main(int argc, char *argv[])
@@ -14,10 +14,10 @@ int main(int argc, char *argv[])
         []
         {
             io_context serverIoContext;
-            Chat chat(serverIoContext);
+            Chat chat;
 
-            TcpServer server(serverIoContext, chat, 1234);
-            server.execute();
+            IServer* server = createServer(serverIoContext, chat, 1234);
+            server->execute();
         })
         .detach();
 

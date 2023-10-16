@@ -7,7 +7,7 @@
 
 class ChatRoom;
 
-struct User : public ISessionUserData
+struct User
 {
     ChatRoom* m_room = nullptr;
     ISession* m_session;
@@ -21,9 +21,9 @@ struct User : public ISessionUserData
 
 class ChatRoom
 {
-    
-public:
     std::map<std::string, User> m_clients;
+public:
+    //std::map<std::string, User> m_clients;
 
     ChatRoom() {}
 
@@ -45,16 +45,20 @@ public:
         return true;
     }
 
+    std::map<std::string, User>& clients()
+    {
+        return m_clients;
+    }
+
 };
 
 class Chat: public IChat
 {
-    io_context& m_serverIoContext;
 
     std::map<std::string, ChatRoom> m_chatRooms;
 
 public:
-    Chat(io_context& serverIoContext) : m_serverIoContext(serverIoContext) {}
+    Chat() {}
 
     virtual void handleMessage(ISession& client, boost::asio::streambuf& message) override
     {
@@ -74,18 +78,19 @@ public:
             if (auto chatRoom = m_chatRooms.find(chatRoomName); chatRoom == m_chatRooms.end()){
                 m_chatRooms[chatRoomName] = ChatRoom();
             }
+
             User newClient(&m_chatRooms[chatRoomName], &client);
             newClient.m_username = username;
             m_chatRooms[chatRoomName].addClient(newClient);
+
             std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
             std::ostream os(&(*wrStreambuf));
-            for (auto it : m_chatRooms[chatRoomName].m_clients)
+
+            for (const auto &it : m_chatRooms[chatRoomName].clients())
             {
                 os << MESSAGE_FROM_CMD";" << username << " has joined the chat;Server;\n";
                 it.second.m_session->sendMessage(wrStreambuf);
             }
-
-            //client.sendMessage(wrStreambuf);
         }
         else if ( command == MESSAGE_TO_ALL_CMD )
         {
@@ -95,7 +100,7 @@ public:
             std::getline(input, username, ';');
             std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
             std::ostream os(&(*wrStreambuf));
-            for (auto it : m_chatRooms[chatRoomName].m_clients)
+            for (const auto &it : m_chatRooms[chatRoomName].clients())
             {
                 os << MESSAGE_FROM_CMD ";" << message << ";" << username << ";\n";
                 it.second.m_session->sendMessage(wrStreambuf);
@@ -103,11 +108,16 @@ public:
         }
         else if ( command == EXIT_THE_CHAT_CMD )
         {
-            std::string username, roomName;
+            std::string roomName, username;
             std::getline(input, roomName, ';');
             std::getline(input, username, ';');
             User goneUser(&m_chatRooms[roomName], &client);
+            goneUser.m_username = username;
             m_chatRooms[roomName].removeClient(goneUser);
+//            for (const auto &it : m_chatRooms[roomName].m_clients)
+//            {
+//                std::cout << it.first << std::endl;
+//            }
         }
     }
 

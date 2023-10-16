@@ -13,8 +13,6 @@ class Session : public std::enable_shared_from_this<Session>, public ISession
     tcp::socket             m_socket;
     boost::asio::streambuf  m_streambuf;
 
-    std::weak_ptr<ISessionUserData> m_userInfoPtr;
-
 public:
     Session( io_context& ioContext, IChat& chat, tcp::socket&& socket)
         : m_ioContext(ioContext),
@@ -25,17 +23,14 @@ public:
 
     ~Session() { std::cout << "!!!! ~ClientSession()" << std::endl; }
 
-    virtual void  setUserInfoPtr( std::weak_ptr<ISessionUserData> userInfoPtr ) override { m_userInfoPtr = userInfoPtr; }
-    virtual std::weak_ptr<ISessionUserData> getUserInfoPtr() override { return m_userInfoPtr; }
+//    virtual void sendMessage( std::string command ) override
+//    {
+//        std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
+//        std::ostream os(&(*wrStreambuf));
+//        os << command;
 
-    virtual void sendMessage( std::string command ) override
-    {
-        std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
-        std::ostream os(&(*wrStreambuf));
-        os << command;
-
-        sendMessage( wrStreambuf );
-    }
+//        sendMessage( wrStreambuf );
+//    }
 
     virtual void sendMessage( std::shared_ptr<boost::asio::streambuf> wrStreambuf ) override
     {
@@ -46,7 +41,7 @@ public:
                     {
                         if ( ec )
                         {
-                            std::cout << "!!!! ClientSession::sendMessage error: " << ec.message() << std::endl;
+                            std::cout << "!!!! Session::sendMessage error: " << ec.message() << std::endl;
                             exit(-1);
                         }
                     });
@@ -61,8 +56,11 @@ public:
                          {
                              if ( ec )
                              {
-                                 std::cout << "!!!! ClientSession::readMessage error: " << ec.message() << std::endl;
-                                 exit(-1);
+                                 if (ec != boost::asio::error::connection_reset)
+                                 {
+                                    std::cout << "!!!! Session::readMessage error: " << ec.message() << std::endl;
+                                    exit(-1);
+                                 }
                              }
                              else
                              {
@@ -84,15 +82,13 @@ public:
 };
 
 
-class TcpServer
+class TcpServer : public IServer
 {
     IChat&          m_chat;
 
     io_context&     m_ioContext;
     tcp::acceptor   m_acceptor;
-    tcp::acceptor   m_acceptor2;
     tcp::socket     m_socket;
-    tcp::socket     m_socket2;
 
     std::vector<std::shared_ptr<Session>> m_sessions;
 
@@ -101,16 +97,13 @@ public:
         m_chat(chat),
         m_ioContext(ioContext),
         m_acceptor( m_ioContext, tcp::endpoint(tcp::v4(), port) ),
-        m_acceptor2( m_ioContext, tcp::endpoint(tcp::v4(), port+1) ),
-        m_socket(m_ioContext),
-        m_socket2(m_ioContext)
+        m_socket(m_ioContext)
     {
     }
 
-    void execute()
+    virtual void execute() override
     {
         post( m_ioContext, [this] { accept(); } );
-        post( m_ioContext, [this] { accept2(); } );
         m_ioContext.run();
     }
 
@@ -125,15 +118,9 @@ public:
             accept();
         });
     }
-    void accept2()
-    {
-        m_acceptor2.async_accept( [this] (boost::system::error_code ec, ip::tcp::socket socket ) {
-            if (!ec)
-            {
-                std::make_shared<Session>( m_ioContext, m_chat, std::move(socket) )->readMessage();
-            }
-
-            accept2();
-        });
-    }
 };
+
+IServer* createServer(io_context& ioContext, IChat& chat, int port)
+{
+    return new TcpServer(ioContext, chat, port);
+}

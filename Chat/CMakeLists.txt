@@ -34,21 +34,21 @@ if (WIN32)
     #link_directories(/usr/local/opt/openssl/lib)
 endif()
 
-add_executable(ThreadTest
-  main.cpp
-  #Log.h
-  Client/ChatClient.h
-  Client/ClientInterfaces.h
-  Client/TcpClient.h
-  BoostClientServer/Chat.h
-  BoostClientServer/Server.h
-  BoostClientServer/ChatInterfaces.h
-)
+#add_executable(ThreadTest
+#  main.cpp
+#  #Log.h
+#  Client/ChatClient.h
+#  Client/ClientInterfaces.h
+#  Client/TcpClient.h
+#  BoostClientServer/Chat.h
+#  BoostClientServer/Server.cpp
+#  BoostClientServer/ChatInterfaces.h
+#)
 add_executable(StartServer
     #Log.h
     BoostClientServer/server_main.cpp
     BoostClientServer/Chat.h
-    BoostClientServer/Server.h
+    BoostClientServer/Server.cpp
     BoostClientServer/ChatInterfaces.h
 )
 

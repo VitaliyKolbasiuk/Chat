@@ -13,22 +13,15 @@
 using namespace boost::asio;
 using ip::tcp;
 
-class ISessionUserData
-{
-protected:
-    virtual ~ISessionUserData() = default;
-};
 
 class ISession
 {
 public:
     virtual ~ISession() = default;
 
-    virtual void sendMessage( std::string message ) = 0;
+    //virtual void sendMessage( std::string message ) = 0;
     virtual void sendMessage( std::shared_ptr<boost::asio::streambuf> wrStreambuf ) = 0;
 
-    virtual void  setUserInfoPtr( std::weak_ptr<ISessionUserData> userInfoPtr ) = 0;
-    virtual std::weak_ptr<ISessionUserData> getUserInfoPtr() = 0;
 };
 
 class IChat
@@ -41,3 +34,10 @@ public:
     //virtual void closeConnection(ISession& client) = 0;
 };
 
+class IServer
+{
+public:
+    virtual void execute() = 0;
+};
+
+IServer* createServer(io_context& ioContext, IChat& chat, int port);

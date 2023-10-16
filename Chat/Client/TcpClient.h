@@ -9,8 +9,9 @@ using ip::tcp;
 class TcpClient
 {
     io_context&  m_ioContext;
-    tcp::socket m_socket;
+    tcp::socket  m_socket;
     IChatClient* m_client;
+    bool         m_stopped = false;
 
 public:
     TcpClient( io_context&  ioContext, IChatClient& client ) :
@@ -70,7 +71,10 @@ public:
                                       {
                                           if ( error_code )
                                           {
-                                              std::cout << "Client read error: " << error_code.message() << std::endl;
+                                              if (!m_stopped)
+                                              {
+                                                std::cout << "Client read error: " << error_code.message() << std::endl;
+                                              }
                                           }
                                           else
                                           {
@@ -88,5 +92,17 @@ public:
                                               readResponse();
                                           }
                                       });
+    }
+
+    void closeConnection()
+    {
+        m_stopped = true;
+        boost::system::error_code ec;
+        m_socket.close(ec);
+        if(ec)
+        {
+            std::cerr << "Socket close error: " << ec.message() << std::endl;
+        }
+        m_ioContext.stop();
     }
 };
