@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Sql)
 
 if (APPLE)
     add_definitions(-DBOOST_ASIO_HAS_STD_INVOKE_RESULT)
@@ -50,17 +51,19 @@ add_executable(StartServer
     BoostClientServer/Chat.h
     BoostClientServer/Server.cpp
     BoostClientServer/ChatInterfaces.h
+    BoostClientServer/ChatDatabase.cpp
 )
 
-add_executable(StartClient
-    #Log.h
-    Client/client_main.cpp
-    Client/Terminal.h
-    Client/ChatClient.h
-    Client/ClientInterfaces.h
-    Client/TcpClient.h
-)
+#add_executable(StartClient
+#    #Log.h
+#    Client/client_main.cpp
+#    Client/Terminal.h
+#    Client/ChatClient.h
+#    Client/ClientInterfaces.h
+#    Client/TcpClient.h
+#)
 
+target_link_libraries(StartServer PRIVATE Qt6::Sql)
 #target_link_libraries(ThreadTest Qt${QT_VERSION_MAJOR}::Core)
 
 #include(GNUInstallDirs)

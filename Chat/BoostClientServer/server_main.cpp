@@ -6,6 +6,9 @@
 int main(int argc, char *argv[])
 {
     std::cout << "Server started" << std::endl;
+    IChatDatabase* database = createDatabase();
+    database->test();
+    return 0;
     // server
     std::thread serverThread(
         []

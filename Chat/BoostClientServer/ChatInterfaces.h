@@ -3,12 +3,13 @@
 #include <boost/asio.hpp>
 
 // messages from server to client
-#define MESSAGE_FROM_CMD    "MESSAGE_FROM" // cmd;nick_name;message
+#define MESSAGE_FROM_CMD     "MESSAGE_FROM"      // cmd;message;chat_room;username
+#define UPDATE_THE_USER_TABLE_CMD "UPDATE_THE_USER_TABLE" // cmd;message;
 
 // messages from client to server
-#define JOIN_TO_CHAT_CMD    "JOIN_TO_CHAT"    // cmd;nick_name
-#define EXIT_THE_CHAT_CMD   "EXIT_THE_CHAT"    // cmd;nick_name
-#define MESSAGE_TO_ALL_CMD  "MESSAGE_TO_ALL"  // cmd;message
+#define JOIN_TO_CHAT_CMD     "JOIN_TO_CHAT"      // cmd;chat_room;username
+#define MESSAGE_TO_ALL_CMD   "MESSAGE_TO_ALL"    // cmd;message;chat_room;username
+#define EXIT_THE_CHAT_CMD    "EXIT_THE_CHAT"     // cmd;chatroom;username
 
 using namespace boost::asio;
 using ip::tcp;
@@ -37,7 +38,17 @@ public:
 class IServer
 {
 public:
+    virtual ~IServer() = default;
     virtual void execute() = 0;
 };
+
+class IChatDatabase
+{
+public:
+    virtual ~IChatDatabase() = default;
+    virtual void test() = 0;
+};
+
+IChatDatabase* createDatabase();
 
 IServer* createServer(io_context& ioContext, IChat& chat, int port);
