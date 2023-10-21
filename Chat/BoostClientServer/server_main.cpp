@@ -1,10 +1,13 @@
 #include <iostream>
+#include <QApplication>
 
 #include "ChatInterfaces.h"
 #include "Chat.h"
 
 int main(int argc, char *argv[])
 {
+    QApplication app(argc, argv);
+
     std::cout << "Server started" << std::endl;
     IChatDatabase* database = createDatabase();
     database->test();

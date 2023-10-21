@@ -9,8 +9,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Sql)
 
 if (APPLE)
@@ -35,6 +35,7 @@ if (WIN32)
     #link_directories(/usr/local/opt/openssl/lib)
 endif()
 
+
 #add_executable(ThreadTest
 #  main.cpp
 #  #Log.h
@@ -54,6 +55,10 @@ add_executable(StartServer
     BoostClientServer/ChatDatabase.cpp
 )
 
+set_target_properties(StartServer PROPERTIES
+    WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE TRUE
+)
 #add_executable(StartClient
 #    #Log.h
 #    Client/client_main.cpp
@@ -62,8 +67,8 @@ add_executable(StartServer
 #    Client/ClientInterfaces.h
 #    Client/TcpClient.h
 #)
+target_link_libraries(StartServer PRIVATE Qt6::Sql Qt6::Core Qt${QT_VERSION_MAJOR}::Widgets)
 
-target_link_libraries(StartServer PRIVATE Qt6::Sql)
 #target_link_libraries(ThreadTest Qt${QT_VERSION_MAJOR}::Core)
 
 #include(GNUInstallDirs)
