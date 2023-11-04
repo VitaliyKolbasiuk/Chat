@@ -6,15 +6,25 @@
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
+#include <filesystem>
 
 struct Query{
     QSqlQuery m_query;
     Query(QSqlDatabase db) : m_query(db) {}
 
-    void exec(std::string sqlQuery)
+    void exec(const std::string& sqlQuery)
     {
         qDebug() << "sqlQuery: " << sqlQuery;
         m_query.exec(QString::fromStdString(sqlQuery));
+        if (!m_query.isValid())
+        {
+            qDebug() << "Error: " << m_query.lastError().text();
+        }
+    }
+    void execq(const QString& sqlQuery)
+    {
+        qDebug() << "sqlQuery: " << sqlQuery;
+        m_query.exec(sqlQuery);
         if (!m_query.isValid())
         {
             qDebug() << "Error: " << m_query.lastError().text();
@@ -32,7 +42,9 @@ class ChatDatabase : public IChatDatabase
     QSqlDatabase m_db;
 public:
     ChatDatabase() {
-        qDebug() << QSqlDatabase::drivers();
+        //qDebug() << QSqlDatabase::drivers();
+        std::filesystem::remove("ChatDatabase.sqlite");
+
         m_db = QSqlDatabase::addDatabase("QSQLITE");
         m_db.setHostName("localhost");
         m_db.setDatabaseName("ChatDatabase.sqlite");
@@ -43,12 +55,14 @@ public:
         {
             qDebug() << m_db.lastError().text();
         }
+
+        //fillTestData();
     }
 
     void createChatRoomTable(const std::string& chatRoomName)
     {
         Query query(m_db);
-        query.exec("CREATE TABLE IF NOT EXISTS " + chatRoomName + "_members (senderId INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT);");
+        query.exec("CREATE TABLE IF NOT EXISTS " + chatRoomName + "_members (senderId INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, userUniqueKey TEXT);");
         query.exec("CREATE TABLE IF NOT EXISTS " + chatRoomName + " (id INTEGER PRIMARY KEY AUTOINCREMENT, message TEXT, senderIdRef INT, time BIGINT, FOREIGN KEY (senderIdRef) REFERENCES " + chatRoomName + "_members(senderId));");
         query.exec("INSERT INTO ChatRoomCatalogue (chatRoomName) VALUES ('" + chatRoomName + "');");
     }
@@ -56,7 +70,14 @@ public:
     void createChatRoomCatalogue()
     {
         Query query(m_db);
-        query.exec("CREATE TABLE IF NOT EXISTS ChatRoomCatalogue (chatRoomId INTEGER PRIMARY KEY AUTOINCREMENT, chatRoomName TEXT, chatRoomTableName TEXT);");
+        query.exec("CREATE TABLE IF NOT EXISTS ChatRoomCatalogue \
+                   (\
+                   chatRoomId INTEGER PRIMARY KEY AUTOINCREMENT, \
+                   chatRoomName TEXT,\
+                   chatRoomTableName TEXT, \
+                   ownerPublicKey TEXT VARCHAR(32),\
+                   isPrivate INT\
+                   );");
         query.exec("CREATE TABLE IF NOT EXISTS UserCatalogue (userId INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT);");
 
         //query.exec("INSERT INTO ChatRoomCatalogue (chatRoomName, chatRoomTableName) VALUES ('Room1', 'Room1_members');");
@@ -87,6 +108,25 @@ public:
         return userId;
     }
 
+    std::vector<std::string> getChatRoomList(std::string userUniqueKey) override
+    {
+        std::vector<std::string> chatRooms;
+
+        Query query(m_db);
+        query.exec("SELECT cr.chatRoomId, cr.chatRoomName, cr.chatRoomTableName FROM ChatRoomCatalogue cr;");
+        while (query.m_query.next())
+        {
+            QString chatRoomTableName = query.value(2).toString();
+            Query query2(m_db);
+            query2.exec("SELECT userUniqueKey FROM " + chatRoomTableName.toStdString() + "_members WHERE userUniqueKey = " + userUniqueKey + ";");
+            while (query2.m_query.next())
+            {
+                chatRooms.push_back(chatRoomTableName.toStdString() + ";" + query.value(0).toString().toStdString());
+            }
+        }
+        return chatRooms;
+    }
+
     void test() override
     {
         Query query(m_db);
@@ -104,6 +144,8 @@ public:
 //        int chatRoomId = getChatRoomId("Room1");
 //        appendMessageToChatRoom(chatRoomId, "Welcome to the server", 1, 224000 );
     }
+
+
 };
 
 IChatDatabase* createDatabase()

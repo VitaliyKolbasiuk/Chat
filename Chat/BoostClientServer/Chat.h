@@ -56,9 +56,10 @@ class Chat: public IChat
 {
 
     std::map<std::string, ChatRoom> m_chatRooms;
+    IChatDatabase& m_database;
 
 public:
-    Chat() {}
+    Chat(IChatDatabase& database) : m_database(database) {}
 
     void updateTable(const std::string &chatRoomName, const std::string &username)
     {
@@ -129,6 +130,22 @@ public:
             m_chatRooms[chatRoomName].removeClient(goneUser);
 
             updateTable(chatRoomName, username);
+        }
+        else if ( command == CONNECT_CMD )
+        {
+            std::string userUniqueKey, deviceUniqueKey;
+            std::getline(input, userUniqueKey, ';');
+            std::getline(input, deviceUniqueKey, ';');
+            std::vector<std::string> chatRooms = m_database.getChatRoomList(userUniqueKey);
+
+            std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
+            std::ostream os(&(*wrStreambuf));
+            os << CHAT_ROOM_LIST_CMD ";";
+            for (const auto &chatRoomInfo : chatRooms)
+            {
+                os << chatRoomInfo << ";";
+            }
+            client.sendMessage(wrStreambuf);
         }
     }
 
