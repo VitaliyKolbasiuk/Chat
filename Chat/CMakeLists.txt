@@ -13,6 +13,9 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Sql)
 
+include_directories(UIChat)
+include_directories(SYSTEM UIChat/cereal/include)
+
 if (APPLE)
     add_definitions(-DBOOST_ASIO_HAS_STD_INVOKE_RESULT)
     include_directories(SYSTEM /usr/local/include)

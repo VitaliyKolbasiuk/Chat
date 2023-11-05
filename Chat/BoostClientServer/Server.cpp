@@ -1,7 +1,10 @@
 #include <iostream>
 #include <map>
 #include <boost/asio.hpp>
+
 #include "ChatInterfaces.h"
+#include "Utils.h"
+#include "Protocol.h"
 
 using namespace boost::asio;
 using ip::tcp;
@@ -79,6 +82,46 @@ public:
                              }
                          });
     }
+
+    void sendHandShake()
+    {
+        Seed handShake;
+        generateRandomKey(handShake.m_data);
+
+        std::stringstream os;
+        cereal::BinaryOutputArchive archive( os );
+        archive(handShake);
+
+        std::string packet = os.str();
+        sendPacket(packet);
+
+    }
+
+    void sendPacket(const std::string& packet)
+    {
+        uint16_t length = packet.length();
+
+        m_socket.async_send(boost::asio::buffer((void*)&length, sizeof(length)), [this, packet] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
+            m_socket.async_send( boost::asio::buffer(packet),
+                                [this] ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
+                                {
+                                    if ( ec )
+                                    {
+                                        std::cout << "!!!! Session::sendMessage error: " << ec.message() << std::endl;
+                                        exit(-1);
+                                    }
+                                });
+        });
+        m_socket.async_send( boost::asio::buffer(packet),
+                    [this] ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
+                    {
+                        if ( ec )
+                        {
+                            std::cout << "!!!! Session::sendMessage error: " << ec.message() << std::endl;
+                            exit(-1);
+                        }
+                    });
+    }
 };
 
 
@@ -112,7 +155,7 @@ public:
         m_acceptor.async_accept( [this] (boost::system::error_code ec, ip::tcp::socket socket ) {
             if (!ec)
             {
-                std::make_shared<Session>( m_ioContext, m_chat, std::move(socket) )->readMessage();
+                std::make_shared<Session>( m_ioContext, m_chat, std::move(socket) )->sendHandShake();
             }
 
             accept();
