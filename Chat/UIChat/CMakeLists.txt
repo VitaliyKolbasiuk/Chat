@@ -39,29 +39,30 @@ if (WIN32)
     #link_directories(/usr/local/opt/openssl/lib)
 endif()
 
-set(PROJECT_SOURCES
-        main.cpp
-	mainwindow.cpp
-	mainwindow.h
-	mainwindow.ui
-	Settings.cpp
-	Settings.h
-	Utils.h
-	Client/ChatClient.h
-	Client/ClientInterfaces.h
-	Client/TcpClient.h
-	Client/Terminal.h
-	Client/Protocol.h
-	ed25519/src/add_scalar.cpp
-	ed25519/src/fe.cpp
-	ed25519/src/ge.cpp
-	ed25519/src/key_exchange.cpp
-	ed25519/src/keypair.cpp
-	ed25519/src/sc.cpp
-	ed25519/src/seed.cpp
-	ed25519/src/sha512.cpp
-	ed25519/src/sign.cpp
-	ed25519/src/verify.cpp
+set(StartClient
+		UIChat/main.cpp
+		UIChat/mainwindow.cpp
+		UIChat/mainwindow.h
+		UIChat/mainwindow.ui
+		UIChat/Settings.cpp
+		UIChat/Settings.h
+		UIChat/Utils.h
+		UIChat/Client/ChatClient.h
+		UIChat/Client/ClientInterfaces.h
+		UIChat/Client/TcpClient.h
+		UIChat/Client/Terminal.h
+		UIChat/Protocol.h
+		UIChat/CreateChatRoom.cpp
+		UIChat/ed25519/src/add_scalar.cpp
+		UIChat/ed25519/src/fe.cpp
+		UIChat/ed25519/src/ge.cpp
+		UIChat/ed25519/src/key_exchange.cpp
+		UIChat/ed25519/src/keypair.cpp
+		UIChat/ed25519/src/sc.cpp
+		UIChat/ed25519/src/seed.cpp
+		UIChat/ed25519/src/sha512.cpp
+		UIChat/ed25519/src/sign.cpp
+		UIChat/ed25519/src/verify.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

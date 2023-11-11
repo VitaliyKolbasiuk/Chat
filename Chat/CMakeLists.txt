@@ -9,6 +9,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_PREFIX_PATH "/home/vitaliykolbasiuk/Qt/6.6.0/gcc_64/lib/cmake")
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Sql)
@@ -58,6 +60,37 @@ add_executable(StartServer
     BoostClientServer/ChatDatabase.cpp
 )
 
+add_executable(StartClient
+        UIChat/main.cpp
+        UIChat/mainwindow.cpp
+        UIChat/mainwindow.h
+        UIChat/mainwindow.ui
+        UIChat/Settings.cpp
+        UIChat/Settings.h
+        UIChat/Utils.h
+        UIChat/Client/ChatClient.h
+        UIChat/Client/ClientInterfaces.h
+        UIChat/Client/TcpClient.h
+        UIChat/Client/Terminal.h
+        UIChat/Protocol.h
+        UIChat/CreateChatRoom.h
+        UIChat/CreateChatRoom.cpp
+        UIChat/CreateChatRoom.ui
+        UIChat/ed25519/src/add_scalar.cpp
+        UIChat/ed25519/src/fe.cpp
+        UIChat/ed25519/src/ge.cpp
+        UIChat/ed25519/src/key_exchange.cpp
+        UIChat/ed25519/src/keypair.cpp
+        UIChat/ed25519/src/sc.cpp
+        UIChat/ed25519/src/seed.cpp
+        UIChat/ed25519/src/sha512.cpp
+        UIChat/ed25519/src/sign.cpp
+        UIChat/ed25519/src/verify.cpp
+        UIChat/SettingsDialog.cpp
+        UIChat/SettingsDialog.h
+        UIChat/SettingsDialog.ui
+)
+
 set_target_properties(StartServer PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
@@ -71,6 +104,7 @@ set_target_properties(StartServer PROPERTIES
 #    Client/TcpClient.h
 #)
 target_link_libraries(StartServer PRIVATE Qt6::Sql Qt6::Core Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(StartClient PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
 #target_link_libraries(ThreadTest Qt${QT_VERSION_MAJOR}::Core)
 

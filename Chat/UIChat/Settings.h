@@ -15,7 +15,11 @@ struct KeyPair{
 };
 
 class Settings{
-    std::string m_historyFileName;
+    //std::string m_historyFileName;
+
+    std::string settingsFileName(){
+        return "settings3.bin";
+    }
 
 public:
     int m_version = 0;
@@ -23,17 +27,17 @@ public:
     std::array<uint8_t, 32> m_deviceKey;
     std::string m_username;
 
-    Settings(std::string fileName);
+    void loadSettings();
 
-    void loadSettings(const std::string& fileName);
+    void saveSettings();
 
-    void saveSettings(const std::string& fileName);
+    void generateKeys();
 
     template <class Archive>
     void serialize( Archive & ar )
     {
         ar( m_version );
         ar( m_deviceKey );
-        ar( m_username, m_historyFileName );
+        ar( m_username );
     }
 };

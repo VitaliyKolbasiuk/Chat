@@ -1,8 +1,6 @@
-C:/c++ projects/Chat/Chat/cmake-build-debug/CMakeFiles/Chat.dir
-C:/c++ projects/Chat/Chat/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/c++ projects/Chat/Chat/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-C:/c++ projects/Chat/Chat/cmake-build-debug/CMakeFiles/list_install_components.dir
-C:/c++ projects/Chat/Chat/cmake-build-debug/CMakeFiles/install.dir
-C:/c++ projects/Chat/Chat/cmake-build-debug/CMakeFiles/install/local.dir
-C:/c++ projects/Chat/Chat/cmake-build-debug/CMakeFiles/Chat_autogen_timestamp_deps.dir
-C:/c++ projects/Chat/Chat/cmake-build-debug/CMakeFiles/Chat_autogen.dir
+/home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug/CMakeFiles/StartServer.dir
+/home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug/CMakeFiles/StartClient.dir
+/home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug/CMakeFiles/StartServer_autogen.dir
+/home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug/CMakeFiles/StartClient_autogen.dir

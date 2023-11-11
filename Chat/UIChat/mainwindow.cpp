@@ -5,6 +5,8 @@
 #include "Settings.h"
 #include "Utils.h"
 #include "CreateChatRoom.h"
+#include "Protocol.h"
+#include "SettingsDialog.h"
 
 #include <QDir>
 
@@ -12,8 +14,19 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 {
     ui->setupUi(this);
     configureUI();
+    init();
+}
 
-    m_chatClient = std::make_shared<QChatClient>();
+void MainWindow::init()
+{
+    if (!std::filesystem::exists("settings2.bin"))
+    {
+
+    }
+    m_settings = new Settings();
+    m_settings->loadSettings();
+    m_chatClient = std::make_shared<QChatClient>(*m_settings);
+
     connect(m_chatClient.get(), &QChatClient::OnMessageReceived, this, [this](auto username, auto message){
         ui->textBrowser->append(username + message + "<br>");
     });
@@ -35,7 +48,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     });
 
     //qDebug() << QDir::homePath();
-    m_settings = new Settings("settings2.bin");
     //system("dir");
     m_chatClient->saveClientInfo(m_settings->m_username, "");
     ui->TextUsername->setText(QString::fromStdString(m_settings->m_username));
@@ -44,11 +56,19 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     m_chatClient->setTcpClient(m_tcpClient);
     m_tcpClient->execute("127.0.0.1", 1234);
 
-    m_chatClient->sendUserMessage(CONNECT_CMD ";" + arrayToHexString(m_settings->m_userKey) + ";" + arrayToHexString(m_settings->m_deviceKey) + ";");
+    //m_chatClient->sendUserMessage(CONNECT_CMD ";" + arrayToHexString(m_settings->m_userKey) + ";" + arrayToHexString(m_settings->m_deviceKey) + ";");
 
     std::thread ([this]{
         m_ioContext1.run();
     }).detach();
+
+    ConnectRequest request{
+        m_settings->m_keyPair.m_publicKey,
+        m_settings->m_username
+
+    };
+
+    AutoBuffer buffer = AutoBuffer::createBuffer(request);
 }
 
 MainWindow::~MainWindow()
@@ -96,7 +116,7 @@ void MainWindow::on_Join_released()
         ui->ChatRoomName->setVisible(false);
         ui->Username->setVisible(false);
         ui->SaveSettings->setVisible(false);
-        ui->SendMessageW->setVisible(true);
+        ui->SendMessage->setVisible(true);
         ui->UserMessage->setVisible(true);
     }
 }
@@ -107,7 +127,7 @@ void MainWindow::on_Join_released()
 void MainWindow::on_SaveSettings_released()
 {
     m_settings->m_username = ui->TextUsername->text().toStdString();
-    m_settings->saveSettings("settings.bin");
+    m_settings->saveSettings();
 }
 
 
@@ -132,7 +152,7 @@ void MainWindow::on_Exit_released()
 
 void MainWindow::on_m_CreateRoom_released()
 {
-    CreateChatRoom createChatRoom(*m_chatClient);
+    CreateChatRoom createChatRoom(*m_chatClient, nullptr);
     createChatRoom.setModal(true);
     createChatRoom.exec();
 }

@@ -2,6 +2,8 @@
 #include <iostream>
 #include <boost/asio.hpp>
 #include "../Client/ClientInterfaces.h"
+#include "QDebug"
+#include "Protocol.h"
 
 using namespace boost::asio;
 using ip::tcp;
@@ -39,26 +41,56 @@ public:
                                        std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
                                        std::ostream os(&(*wrStreambuf));
 
-                                       sendMessageToServer( wrStreambuf );
+                                       //sendMessageToServer( wrStreambuf );
                                    }
                                });
     }
 
-    void sendMessageToServer( std::shared_ptr<boost::asio::streambuf> streambuf )
+    void sendPacket(const AutoBuffer& buffer)
     {
-        async_write( m_socket, *streambuf,
-                    [this,streambuf] ( const boost::system::error_code& error, std::size_t bytes_transferred )
-                    {
-                        if ( error )
-                        {
-                            std::cout << "Client write error: " << error.message() << std::endl;
-                        }
-                        else
-                        {
-                            readResponse();
-                        }
-                    });
+        m_socket.async_send(boost::asio::buffer(buffer.m_buffer, sizeof(uint16_t) + sizeof(uint16_t) + buffer.getDataSize()), [this, buffer] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
+            if ( ec )
+            {
+                std::cout << "!!!! Session::sendMessage error (0): " << ec.message() << std::endl;
+                exit(-1);
+            }
+        });
     }
+
+    void readPacket(const std::string& packet)
+    {
+        auto length = std::make_unique<uint16_t>();
+
+        async_read(m_socket, mutable_buffer((void*)length.get(), sizeof(*length)), transfer_all(),
+                   [this, length = std::move(length)] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
+            if ( ec )
+            {
+                std::cout << "!!!! Session::sendMessage error (0): " << ec.message() << std::endl;
+                return;
+            }
+            if (*length == 0)
+            {
+                std::cout << "!!!! Length = 0";
+                return;
+            }
+                       auto readBuffer = std::make_unique<std::vector<uint8_t >>(*length + sizeof(uint16_t), 0);
+
+            async_read( m_socket, mutable_buffer(&readBuffer.get()[0], *length + sizeof(uint16_t)), boost::asio::transfer_all(),
+                                 [this, readBuffer = std::move(readBuffer), length = *length] ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
+                                 {
+                                     if ( ec )
+                                     {
+                                         std::cout << "!!!! Session::sendMessage error (1): " << ec.message()
+                                                   << std::endl;
+                                         return;
+                                     }
+                                     uint16_t packetType = *(reinterpret_cast<uint16_t*>(&(*readBuffer)[0]));
+                                     m_client->onPacketReceived(packetType, &(*readBuffer)[0] + sizeof(uint16_t), length);
+                                 });
+        });
+    }
+
+
 
     void readResponse()
     {

@@ -26,6 +26,7 @@ public:
     virtual void handleServerMessage( const std::string& command, boost::asio::streambuf& message ) = 0;
     virtual bool sendUserMessage( const std::string& message ) = 0;
     virtual void saveClientInfo( const std::string& chatClientName, const std::string& chatRoomName ) = 0;
+    virtual void onPacketReceived ( uint16_t packetType, uint8_t* packet, uint16_t packetSize) = 0;
     virtual void closeConnection() = 0;
 };
 

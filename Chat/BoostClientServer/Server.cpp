@@ -22,6 +22,7 @@ public:
         m_chat(chat),
         m_socket(std::move(socket))
     {
+        async_read( m_socket, )
     }
 
     ~Session() { std::cout << "!!!! ~ClientSession()" << std::endl; }
@@ -102,25 +103,51 @@ public:
         uint16_t length = packet.length();
 
         m_socket.async_send(boost::asio::buffer((void*)&length, sizeof(length)), [this, packet] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
+            if ( ec )
+            {
+                std::cout << "!!!! Session::sendMessage error (0): " << ec.message() << std::endl;
+                exit(-1);
+            }
             m_socket.async_send( boost::asio::buffer(packet),
                                 [this] ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
                                 {
                                     if ( ec )
                                     {
-                                        std::cout << "!!!! Session::sendMessage error: " << ec.message() << std::endl;
+                                        std::cout << "!!!! Session::sendMessage error (1): " << ec.message() << std::endl;
                                         exit(-1);
                                     }
                                 });
         });
-        m_socket.async_send( boost::asio::buffer(packet),
-                    [this] ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
-                    {
-                        if ( ec )
-                        {
-                            std::cout << "!!!! Session::sendMessage error: " << ec.message() << std::endl;
-                            exit(-1);
-                        }
-                    });
+    }
+
+    void readPacket(const std::string& packet)
+    {
+        std::shared_ptr<uint16_t> length = std::make_shared<uint16_t>();
+
+        async_read(m_socket, mutable_buffer((void*)length.get(), sizeof(*length)), transfer_all(),
+                   [this, length] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
+                       if ( ec )
+                       {
+                           std::cout << "!!!! Session::sendMessage error (0): " << ec.message() << std::endl;
+                           return;
+                       }
+                       if (*length == 0)
+                       {
+                           std::cout << "!!!! Length = 0";
+                           return;
+                       }
+                       std::shared_ptr<std::vector<uint8_t>> readBuffer = std::make_shared<std::vector<uint8_t >>(*length, 0);
+
+                       async_read( m_socket, mutable_buffer(&readBuffer.get()[0], *length), boost::asio::transfer_all(),
+                                   [] ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
+                                   {
+                                       if ( ec )
+                                       {
+                                           std::cout << "!!!! Session::sendMessage error (1): " << ec.message() << std::endl;
+                                           return;
+                                       }
+                                   });
+                   });
     }
 };
 

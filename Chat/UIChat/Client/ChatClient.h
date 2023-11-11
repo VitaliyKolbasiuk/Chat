@@ -10,6 +10,10 @@
 #include "TcpClient.h"
 //#include "../Log.h"
 
+#include "Settings.h"
+#include "ed25519/src/ed25519.h"
+
+
 class QChatClient : public QObject, public IChatClient
 {
    Q_OBJECT
@@ -25,9 +29,10 @@ private:
     std::weak_ptr<TcpClient>  m_tcpClient;
     std::string m_chatClientName;
     std::string m_chatRoomName;
+    Settings& m_settings;
 
 public:
-    QChatClient() {
+    QChatClient(Settings& settings) : m_settings(settings) {
 
     }
 
@@ -41,6 +46,39 @@ public:
         m_chatClientName = chatClientName;
         m_chatRoomName = chatRoomName;
     }
+
+    virtual void onPacketReceived ( uint16_t packetType, uint8_t* packet, uint16_t packetSize) override
+    {
+        std::stringstream ss;
+        ss.write(reinterpret_cast<const char*>(packet), packetSize);
+        cereal::BinaryInputArchive archive( ss );
+        switch(packetType)
+        {
+            case HandShakeRequest::type:
+                HandShakeRequest request;
+                archive(request);
+                onHandShake(request);
+        }
+    }
+
+    void onHandShake(const HandShakeRequest& request)
+    {
+        HandShakeResponse response;
+        ed25519_sign(&response.m_sign[0],
+                     &request.m_random[0],
+                     sizeof(request.m_random),
+                     &m_settings.m_keyPair.m_publicKey[0],
+                     &m_settings.m_keyPair.m_privateKey[0]);
+
+        AutoBuffer buffer = AutoBuffer::createBuffer(response);
+
+        if (auto tcpClient = m_tcpClient.lock(); tcpClient )
+        {
+            tcpClient->sendPacket(buffer);
+        }
+    }
+
+
 
     virtual void handleServerMessage(const std::string& command, boost::asio::streambuf& message) override
     {
@@ -83,7 +121,7 @@ public:
         os << message + m_chatRoomName + ";" + m_chatClientName + ";\n";
         if (auto tcpClient = m_tcpClient.lock(); tcpClient )
         {
-            tcpClient->sendMessageToServer(wrStreambuf);
+            //tcpClient->sendMessageToServer(wrStreambuf);
             return true;
         }
         else
