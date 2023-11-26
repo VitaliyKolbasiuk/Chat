@@ -17,16 +17,7 @@
 using namespace boost::asio;
 using ip::tcp;
 
-
-class ISession
-{
-public:
-    virtual ~ISession() = default;
-
-    //virtual void sendMessage( std::string message ) = 0;
-    virtual void sendMessage( std::shared_ptr<boost::asio::streambuf> wrStreambuf ) = 0;
-
-};
+class ServerSession;
 
 class IChat
 {
@@ -34,8 +25,9 @@ protected:
     virtual ~IChat() = default;
 
 public:
-    virtual void handleMessage( ISession&, boost::asio::streambuf& message ) = 0;
-    //virtual void closeConnection(ISession& client) = 0;
+    //virtual void handleMessage(ServerSession&, boost::asio::streambuf& message ) = 0;
+    virtual void onPacketReceived(uint16_t packetType, const uint8_t* readBuffer, uint16_t length, std::weak_ptr<ServerSession> session) = 0;
+    //virtual void closeConnection(Session& client) = 0;
 };
 
 class IServer

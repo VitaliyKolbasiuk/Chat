@@ -1,6 +1,0 @@
-/home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug/CMakeFiles/StartServer.dir
-/home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug/CMakeFiles/StartClient.dir
-/home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug/CMakeFiles/StartServer_autogen.dir
-/home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug/CMakeFiles/StartClient_autogen.dir

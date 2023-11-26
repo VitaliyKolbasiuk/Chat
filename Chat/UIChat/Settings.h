@@ -3,6 +3,8 @@
 #include <cereal/types/string.hpp>
 #include <array>
 
+#include "Types.h"
+
 struct KeyPair{
     std::array<uint8_t, 64> m_privateKey;
     std::array<uint8_t, 32> m_publicKey;
@@ -24,10 +26,10 @@ class Settings{
 public:
     int m_version = 0;
     KeyPair m_keyPair;
-    std::array<uint8_t, 32> m_deviceKey;
+    Key m_deviceKey;
     std::string m_username;
 
-    void loadSettings();
+    bool loadSettings();
 
     void saveSettings();
 
@@ -39,5 +41,6 @@ public:
         ar( m_version );
         ar( m_deviceKey );
         ar( m_username );
+        ar( m_keyPair );
     }
 };

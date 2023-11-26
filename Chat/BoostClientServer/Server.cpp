@@ -2,155 +2,13 @@
 #include <map>
 #include <boost/asio.hpp>
 
-#include "ChatInterfaces.h"
-#include "Utils.h"
-#include "Protocol.h"
+//#include "ChatInterfaces.h"
+//#include "Utils.h"
+//#include "Protocol.h"
+#include "ServerSession.h"
 
 using namespace boost::asio;
 using ip::tcp;
-
-class Session : public std::enable_shared_from_this<Session>, public ISession
-{
-    io_context&             m_ioContext;
-    IChat&                  m_chat;
-    tcp::socket             m_socket;
-    boost::asio::streambuf  m_streambuf;
-
-public:
-    Session( io_context& ioContext, IChat& chat, tcp::socket&& socket)
-        : m_ioContext(ioContext),
-        m_chat(chat),
-        m_socket(std::move(socket))
-    {
-        async_read( m_socket, )
-    }
-
-    ~Session() { std::cout << "!!!! ~ClientSession()" << std::endl; }
-
-//    virtual void sendMessage( std::string command ) override
-//    {
-//        std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
-//        std::ostream os(&(*wrStreambuf));
-//        os << command;
-
-//        sendMessage( wrStreambuf );
-//    }
-
-    virtual void sendMessage( std::shared_ptr<boost::asio::streambuf> wrStreambuf ) override
-    {
-        auto self(shared_from_this());
-
-        async_write( m_socket, *wrStreambuf,
-                    [this,self,wrStreambuf] ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
-                    {
-                        if ( ec )
-                        {
-                            std::cout << "!!!! Session::sendMessage error: " << ec.message() << std::endl;
-                            exit(-1);
-                        }
-                    });
-    }
-
-    void readMessage()
-    {
-        auto self(shared_from_this());
-
-        async_read_until( m_socket, m_streambuf, '\n',
-                         [this,self] ( const boost::system::error_code& ec, std::size_t bytes_transferred )
-                         {
-                             if ( ec )
-                             {
-                                 if (ec != boost::asio::error::connection_reset)
-                                 {
-                                    std::cout << "!!!! Session::readMessage error: " << ec.message() << std::endl;
-                                    exit(-1);
-                                 }
-                             }
-                             else
-                             {
-                                 // Получено новое сообщение
-                                 //std::istream is(&m_streambuf);
-                                 //std::string message;
-                                 //std::getline(is, message);
-
-                                 // Вывести сообщение на консоль
-                                 //std::cout << "Received message: " << message << std::endl;
-
-                                 m_chat.handleMessage(*this, m_streambuf);
-                                 m_streambuf.consume(bytes_transferred);
-
-                                 readMessage();
-                             }
-                         });
-    }
-
-    void sendHandShake()
-    {
-        Seed handShake;
-        generateRandomKey(handShake.m_data);
-
-        std::stringstream os;
-        cereal::BinaryOutputArchive archive( os );
-        archive(handShake);
-
-        std::string packet = os.str();
-        sendPacket(packet);
-
-    }
-
-    void sendPacket(const std::string& packet)
-    {
-        uint16_t length = packet.length();
-
-        m_socket.async_send(boost::asio::buffer((void*)&length, sizeof(length)), [this, packet] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
-            if ( ec )
-            {
-                std::cout << "!!!! Session::sendMessage error (0): " << ec.message() << std::endl;
-                exit(-1);
-            }
-            m_socket.async_send( boost::asio::buffer(packet),
-                                [this] ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
-                                {
-                                    if ( ec )
-                                    {
-                                        std::cout << "!!!! Session::sendMessage error (1): " << ec.message() << std::endl;
-                                        exit(-1);
-                                    }
-                                });
-        });
-    }
-
-    void readPacket(const std::string& packet)
-    {
-        std::shared_ptr<uint16_t> length = std::make_shared<uint16_t>();
-
-        async_read(m_socket, mutable_buffer((void*)length.get(), sizeof(*length)), transfer_all(),
-                   [this, length] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
-                       if ( ec )
-                       {
-                           std::cout << "!!!! Session::sendMessage error (0): " << ec.message() << std::endl;
-                           return;
-                       }
-                       if (*length == 0)
-                       {
-                           std::cout << "!!!! Length = 0";
-                           return;
-                       }
-                       std::shared_ptr<std::vector<uint8_t>> readBuffer = std::make_shared<std::vector<uint8_t >>(*length, 0);
-
-                       async_read( m_socket, mutable_buffer(&readBuffer.get()[0], *length), boost::asio::transfer_all(),
-                                   [] ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
-                                   {
-                                       if ( ec )
-                                       {
-                                           std::cout << "!!!! Session::sendMessage error (1): " << ec.message() << std::endl;
-                                           return;
-                                       }
-                                   });
-                   });
-    }
-};
-
 
 class TcpServer : public IServer
 {
@@ -160,7 +18,7 @@ class TcpServer : public IServer
     tcp::acceptor   m_acceptor;
     tcp::socket     m_socket;
 
-    std::vector<std::shared_ptr<Session>> m_sessions;
+    std::vector<std::shared_ptr<ServerSession>> m_sessions;
 
 public:
     TcpServer( io_context& ioContext, IChat& chat, int port ) :
@@ -182,7 +40,7 @@ public:
         m_acceptor.async_accept( [this] (boost::system::error_code ec, ip::tcp::socket socket ) {
             if (!ec)
             {
-                std::make_shared<Session>( m_ioContext, m_chat, std::move(socket) )->sendHandShake();
+                std::make_shared<ServerSession>( m_ioContext, m_chat, std::move(socket) )->readPacket();
             }
 
             accept();

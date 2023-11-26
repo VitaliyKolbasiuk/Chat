@@ -31,6 +31,10 @@ private:
     std::string m_chatRoomName;
     Settings& m_settings;
 
+private:
+    RequestHeader<ConnectRequest> m_connectRequest;
+
+
 public:
     QChatClient(Settings& settings) : m_settings(settings) {
 
@@ -47,35 +51,50 @@ public:
         m_chatRoomName = chatRoomName;
     }
 
+    virtual void onSocketConnected() override
+    {
+
+        m_connectRequest.m_request.m_deviceKey = m_settings.m_deviceKey;
+        m_connectRequest.m_request.m_publicKey = m_settings.m_keyPair.m_publicKey;
+        m_connectRequest.m_request.m_nickname = m_settings.m_username;
+
+        if (auto tcpClient = m_tcpClient.lock(); tcpClient )
+        {
+            tcpClient->sendPacket(m_connectRequest);
+            tcpClient->readPacket();
+        }
+    }
+
     virtual void onPacketReceived ( uint16_t packetType, uint8_t* packet, uint16_t packetSize) override
     {
-        std::stringstream ss;
-        ss.write(reinterpret_cast<const char*>(packet), packetSize);
-        cereal::BinaryInputArchive archive( ss );
+//        std::stringstream ss;
+//        ss.write(reinterpret_cast<const char*>(packet), packetSize);
+//        cereal::BinaryInputArchive archive( ss );
         switch(packetType)
         {
             case HandShakeRequest::type:
-                HandShakeRequest request;
-                archive(request);
-                onHandShake(request);
+                qDebug() << "HandShaked received";
+//                HandShakeRequest request;
+//                archive(request);
+//                onHandShake(request);
         }
     }
 
     void onHandShake(const HandShakeRequest& request)
     {
-        HandShakeResponse response;
-        ed25519_sign(&response.m_sign[0],
-                     &request.m_random[0],
-                     sizeof(request.m_random),
-                     &m_settings.m_keyPair.m_publicKey[0],
-                     &m_settings.m_keyPair.m_privateKey[0]);
-
-        AutoBuffer buffer = AutoBuffer::createBuffer(response);
-
-        if (auto tcpClient = m_tcpClient.lock(); tcpClient )
-        {
-            tcpClient->sendPacket(buffer);
-        }
+//        HandShakeResponse response;
+//        ed25519_sign(&response.m_sign[0],
+//                     &request.m_random[0],
+//                     sizeof(request.m_random),
+//                     &m_settings.m_keyPair.m_publicKey[0],
+//                     &m_settings.m_keyPair.m_privateKey[0]);
+//
+//        AutoBuffer buffer = createAutoBuffer(response);
+//
+//        if (auto tcpClient = m_tcpClient.lock(); tcpClient )
+//        {
+//            tcpClient->sendPacket(std::move(buffer));
+//        }
     }
 
 

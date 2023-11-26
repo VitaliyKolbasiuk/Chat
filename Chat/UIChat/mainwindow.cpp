@@ -19,12 +19,23 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 
 void MainWindow::init()
 {
-    if (!std::filesystem::exists("settings2.bin"))
-    {
-
-    }
     m_settings = new Settings();
-    m_settings->loadSettings();
+    if (!m_settings->loadSettings())
+    {
+        SettingsDialog settingsDialog;
+        settingsDialog.setModal(true);
+        if (settingsDialog.exec() == QDialog::Accepted)
+        {
+            if (!m_settings->loadSettings())
+            {
+                qDebug() << "Load Settings failed";
+            }
+        }
+        else
+        {
+            exit(0);
+        }
+    }
     m_chatClient = std::make_shared<QChatClient>(*m_settings);
 
     connect(m_chatClient.get(), &QChatClient::OnMessageReceived, this, [this](auto username, auto message){
@@ -54,21 +65,16 @@ void MainWindow::init()
 
     m_tcpClient = std::make_shared<TcpClient>(m_ioContext1, m_chatClient);
     m_chatClient->setTcpClient(m_tcpClient);
-    m_tcpClient->execute("127.0.0.1", 1234);
+    m_tcpClient->connect("127.0.0.1", 1234);
 
     //m_chatClient->sendUserMessage(CONNECT_CMD ";" + arrayToHexString(m_settings->m_userKey) + ";" + arrayToHexString(m_settings->m_deviceKey) + ";");
 
     std::thread ([this]{
+        boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard(m_ioContext1.get_executor());
         m_ioContext1.run();
+        qDebug() << "Context has stopped";
     }).detach();
 
-    ConnectRequest request{
-        m_settings->m_keyPair.m_publicKey,
-        m_settings->m_username
-
-    };
-
-    AutoBuffer buffer = AutoBuffer::createBuffer(request);
 }
 
 MainWindow::~MainWindow()

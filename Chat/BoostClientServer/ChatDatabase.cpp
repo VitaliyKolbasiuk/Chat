@@ -1,5 +1,3 @@
-#pragma once
-
 #include "ChatInterfaces.h"
 
 #include <iostream>

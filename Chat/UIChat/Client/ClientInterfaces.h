@@ -23,6 +23,7 @@ public:
     virtual ~IChatClient() = default;
 
 public:
+    virtual void onSocketConnected() = 0;
     virtual void handleServerMessage( const std::string& command, boost::asio::streambuf& message ) = 0;
     virtual bool sendUserMessage( const std::string& message ) = 0;
     virtual void saveClientInfo( const std::string& chatClientName, const std::string& chatRoomName ) = 0;

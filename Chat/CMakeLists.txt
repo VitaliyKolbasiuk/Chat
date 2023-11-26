@@ -58,6 +58,7 @@ add_executable(StartServer
     BoostClientServer/Server.cpp
     BoostClientServer/ChatInterfaces.h
     BoostClientServer/ChatDatabase.cpp
+        BoostClientServer/ServerSession.h
 )
 
 add_executable(StartClient
@@ -89,6 +90,7 @@ add_executable(StartClient
         UIChat/SettingsDialog.cpp
         UIChat/SettingsDialog.h
         UIChat/SettingsDialog.ui
+        UIChat/Types.h
 )
 
 set_target_properties(StartServer PROPERTIES

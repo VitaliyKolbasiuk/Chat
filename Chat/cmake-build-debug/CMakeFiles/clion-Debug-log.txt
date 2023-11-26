@@ -1,6 +1,0 @@
-/home/vitaliykolbasiuk/.local/share/JetBrains/Toolbox/apps/clion/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" -S /home/vitaliykolbasiuk/CppProjects/Chat/Chat -B /home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug
--- Could NOT find XKB (missing: XKB_LIBRARY XKB_INCLUDE_DIR) (Required is at least version "0.5.0")
--- Could NOT find WrapVulkanHeaders (missing: Vulkan_INCLUDE_DIR) 
--- Configuring done (0.3s)
--- Generating done (0.0s)
--- Build files have been written to: /home/vitaliykolbasiuk/CppProjects/Chat/Chat/cmake-build-debug

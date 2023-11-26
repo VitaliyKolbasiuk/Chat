@@ -3,20 +3,39 @@
 #include <map>
 #include <optional>
 
-#include "ChatInterfaces.h"
+//#include "ChatInterfaces.h"
+//#include "Protocol.h"
+//#include "Utils.h"
+#include "ServerSession.h"
 
 class ChatRoom;
 
 struct User
 {
     ChatRoom* m_room = nullptr;
-    ISession* m_session;
+    ServerSession* m_session;
     std::string m_username;
 
-    User(ChatRoom* room = nullptr, ISession* session = nullptr) : m_room(room), m_session(session) {}
+    User(ChatRoom* room = nullptr, ServerSession* session = nullptr) : m_room(room), m_session(session) {}
 
     User (const User&) = default;
     User& operator=(const User&) = default;
+};
+
+struct Connection
+{
+    std::weak_ptr<ServerSession>    m_session;
+    Key                             m_deviceKey;
+    RequestHeader<HandShakeRequest> m_handShakeRequest;
+};
+
+struct UserInfo
+{
+    std::string             m_nickname;
+    Key                     m_publicKey;
+    std::vector<Connection> m_connections;
+
+    UserInfo(const std::string& nickname, const Key& publicKey ) : m_nickname(nickname), m_publicKey(publicKey) {}
 };
 
 class ChatRoom
@@ -54,7 +73,7 @@ public:
 
 class Chat: public IChat
 {
-
+    std::map<Key, std::shared_ptr<UserInfo>> m_users;
     std::map<std::string, ChatRoom> m_chatRooms;
     IChatDatabase& m_database;
 
@@ -68,84 +87,35 @@ public:
         for (const auto &user : m_chatRooms[chatRoomName].clients())
         {
             os << UPDATE_THE_USER_TABLE_CMD";" + username + ";\n";
-            user.second.m_session->sendMessage(wrStreambuf);
+            //user.second.m_session->sendMessage(wrStreambuf);
         }
     }
 
-    virtual void handleMessage(ISession& client, boost::asio::streambuf& message) override
+    virtual void onPacketReceived(uint16_t packetType, const uint8_t* readBuffer, uint16_t packetSize, std::weak_ptr<ServerSession> session) override
     {
-        std::istringstream input;
-        input.str( std::string( (const char*)message.data().data(), message.size() ) );
 
-        std::string command;
-        std::getline( input, command, ';');
-        if ( command == JOIN_TO_CHAT_CMD )
+        switch(packetType)
         {
-            std::string chatRoomName;
-            std::getline( input, chatRoomName, ';');
-
-            std::string username;
-            std::getline( input, username, ';');
-
-            if (auto chatRoom = m_chatRooms.find(chatRoomName); chatRoom == m_chatRooms.end()){
-                m_chatRooms[chatRoomName] = ChatRoom();
-            }
-
-            User newClient(&m_chatRooms[chatRoomName], &client);
-            newClient.m_username = username;
-            m_chatRooms[chatRoomName].addClient(newClient);
-
-            std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
-            std::ostream os(&(*wrStreambuf));
-
-            for (const auto &user : m_chatRooms[chatRoomName].clients())
+            case ConnectRequest::type:
             {
-                os << MESSAGE_FROM_CMD";" << username << " has joined the chat;Server;\n"; // SEND MESSAGE TO EVERYONE
-                user.second.m_session->sendMessage(wrStreambuf);
-            }
-            updateTable(chatRoomName, username);
+                const ConnectRequest& request = *(reinterpret_cast<const ConnectRequest*>(readBuffer));
 
-        }
-        else if ( command == MESSAGE_TO_ALL_CMD )
-        {
-            std::string message, chatRoomName, username;
-            std::getline(input, message, ';');
-            std::getline(input, chatRoomName, ';');
-            std::getline(input, username, ';');
-            std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
-            std::ostream os(&(*wrStreambuf));
-            os << MESSAGE_FROM_CMD ";" << message << ";" << username << ";" << std::to_string(uint64_t(std::time(nullptr))) << ";\n";
-            for (const auto &it : m_chatRooms[chatRoomName].clients())
-            {
-                it.second.m_session->sendMessage(wrStreambuf);
-            }
-        }
-        else if ( command == EXIT_THE_CHAT_CMD )
-        {
-            std::string chatRoomName, username;
-            std::getline(input, chatRoomName, ';');
-            std::getline(input, username, ';');
-            User goneUser(&m_chatRooms[chatRoomName], &client);
-            goneUser.m_username = username;
-            m_chatRooms[chatRoomName].removeClient(goneUser);
+                auto it = m_users.find(request.m_publicKey);
+                if (it == m_users.end())
+                {
+                    it = m_users.insert({request.m_publicKey, std::make_shared<UserInfo>(request.m_nickname, request.m_publicKey)}).first;
+                    it->second->m_publicKey = request.m_publicKey;
+                    it->second->m_nickname = request.m_nickname;
+                }
+                it->second->m_connections.emplace_back(session, request.m_deviceKey);
 
-            updateTable(chatRoomName, username);
-        }
-        else if ( command == CONNECT_CMD )
-        {
-            std::string userUniqueKey, deviceUniqueKey;
-            std::getline(input, userUniqueKey, ';');
-            std::getline(input, deviceUniqueKey, ';');
-            std::vector<std::string> chatRooms = m_database.getChatRoomList(userUniqueKey);
-
-            std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
-            std::ostream os(&(*wrStreambuf));
-            os << CHAT_ROOM_LIST_CMD ";";
-            for (const auto &chatRoomInfo : chatRooms)
-            {
-                os << chatRoomInfo << ";";
+                generateRandomKey(it->second->m_connections.back().m_handShakeRequest.m_request.m_random);
+                if (auto sessionPtr = session.lock(); sessionPtr)
+                {
+                    sessionPtr->sendPacket(it->second->m_connections.back().m_handShakeRequest);
+                }
             }
-            client.sendMessage(wrStreambuf);
+
         }
     }
 

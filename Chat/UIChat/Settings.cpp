@@ -7,6 +7,7 @@
 #include <cereal/types/array.hpp>
 #include <fstream>
 #include <QDebug>
+#include <QUuid>
 
 #include "ed25519/src/ed25519.h"
 #include "SettingsDialog.h"
@@ -20,26 +21,27 @@ void Settings::generateKeys()
     qDebug() << "!!!!!Keypair generated";
 
     generateRandomKey(m_deviceKey);
+
+    QUuid uuid = QUuid::createUuid();
+    auto uuidString = uuid.toString().toStdString();
+    Sign sign;
+    ed25519_sign(&sign[0], (uint8_t*)uuidString.c_str(), uuidString.size(), &m_keyPair.m_publicKey[0], &m_keyPair.m_privateKey[0]);
+
+    // Output the UUID
+    std::memcpy(&m_deviceKey, &sign[0], 32);
 }
 
-void Settings::loadSettings()
+bool Settings::loadSettings()
 {
     try{
         std::ifstream ios(settingsFileName() + "_keys", std::ios::binary);
         cereal::BinaryInputArchive archive( ios );
-        archive(m_keyPair);
+        archive(*this);
+        return true;
     }
-    catch(...){
-        SettingsDialog settingsDialog;
-        settingsDialog.setModal(true);
-        if (settingsDialog.exec() == QDialog::Accepted)
-        {
-            saveSettings();
-        }
-        else
-        {
-            exit(0);
-        }
+    catch(std::runtime_error& ex){
+        qDebug() << "Error: " << ex.what();
+        return false;
     }
 
     // TEST CASE
@@ -77,7 +79,7 @@ void Settings::loadSettings()
 void Settings::saveSettings()
 {
     try{
-        std::ofstream os(settingsFileName(), std::ios::binary);
+        std::ofstream os(settingsFileName() + "_keys", std::ios::binary);
         cereal::BinaryOutputArchive archive( os );
         archive(*this);
     }
