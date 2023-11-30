@@ -45,15 +45,15 @@ public:
     void readPacket()
     {
         auto header = std::make_shared<RequestHeaderBase>();
-
-
-        async_read(m_socket, mutable_buffer((void*)header.get(), sizeof(*header)), transfer_all(),
+        auto* headerPtr = &(*header);
+        async_read(m_socket, buffer(headerPtr, sizeof(*header)), transfer_all(),
                    [this, header = std::move(header)] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                        if ( ec )
                        {
-                           qDebug() <<  "!!!! Session::sendMessage error (0): " << ec.message();
+                           qDebug() <<  "!!!! Session::readMessage error (0): " << ec.message();
                            return;
                        }
+                       qDebug() << "Async_read: " << header->m_length << ' ' << header->m_type;
                        if (header->m_length == 0)
                        {
                            qDebug() <<  "!!!! Length = 0";
@@ -61,13 +61,13 @@ public:
                        }
                        auto readBuffer = std::make_shared<std::vector<uint8_t >>(header->m_length, 0);
 
-                       async_read( m_socket, mutable_buffer(&readBuffer.get()[0], header->m_length+ sizeof(uint16_t)), boost::asio::transfer_all(),
-                                   [this, readBuffer = std::move(readBuffer), header = *header.get()]
+                       async_read( m_socket, buffer(*readBuffer), boost::asio::transfer_all(),
+                                   [this, readBuffer, header = *header.get()]
                                            ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
                                    {
                                        if ( ec )
                                        {
-                                           std::cout << "!!!! Session::sendMessage error (1): " << ec.message()
+                                           std::cout << "!!!! Session::readMessage error (1): " << ec.message()
                                                      << std::endl;
                                            return;
                                        }

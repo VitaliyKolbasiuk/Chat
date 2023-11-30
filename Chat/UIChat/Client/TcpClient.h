@@ -61,30 +61,30 @@ public:
 
     void readPacket()
     {
-        auto length = std::make_unique<uint16_t>();
+        auto length = std::make_shared<uint16_t>();
 
         async_read(m_socket, mutable_buffer((void*)length.get(), sizeof(*length)), transfer_all(),
-                   [this, length = std::move(length)] (const boost::system::error_code& ec, std::size_t bytes_transferred )
+                   [this, length] (const boost::system::error_code& ec, std::size_t bytes_transferred )
         {
             if ( ec )
             {
-                std::cout << "!!!! Session::sendMessage error (2): " << ec.message() << std::endl;
+                std::cout << "!!!! Session::readMessage error (2): " << ec.message() << std::endl;
                 return;
             }
+            qDebug() << "ReadPacket: " << *length;
             if (*length == 0)
             {
                 std::cout << "!!!! Length = 0";
                 return;
             }
-            auto readBuffer = std::make_unique<std::vector<uint8_t >>(*length + sizeof(uint16_t), 0);
+            auto readBuffer = std::make_shared<std::vector<uint8_t >>(*length + sizeof(uint16_t), 0);
 
             async_read( m_socket, mutable_buffer(&readBuffer.get()[0], *length + sizeof(uint16_t)), boost::asio::transfer_all(),
-                        [this, readBuffer = std::move(readBuffer), length = *length] ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
+                        [this, readBuffer, length = *length] ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
                         {
                             if ( ec )
                             {
-                                std::cout << "!!!! Session::sendMessage error (3): " << ec.message()
-                                          << std::endl;
+                                std::cout << "!!!! Session::readMessage error (3): " << ec.message() << std::endl;
                                 return;
                             }
                             uint16_t packetType = *(reinterpret_cast<uint16_t*>(&(*readBuffer)[0]));

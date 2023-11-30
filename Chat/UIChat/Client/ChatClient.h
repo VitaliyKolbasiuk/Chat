@@ -60,7 +60,9 @@ public:
 
         if (auto tcpClient = m_tcpClient.lock(); tcpClient )
         {
+            qDebug() << "Connect request has been sent";
             tcpClient->sendPacket(m_connectRequest);
+            qDebug() << "Waiting packet";
             tcpClient->readPacket();
         }
     }

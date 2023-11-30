@@ -40,7 +40,10 @@ public:
         m_acceptor.async_accept( [this] (boost::system::error_code ec, ip::tcp::socket socket ) {
             if (!ec)
             {
-                std::make_shared<ServerSession>( m_ioContext, m_chat, std::move(socket) )->readPacket();
+                qDebug() << "Connection established" << socket.remote_endpoint().address().to_string() << ": " << socket.remote_endpoint().port();
+                auto session = std::make_shared<ServerSession>( m_ioContext, m_chat, std::move(socket) );
+                m_sessions.push_back(session);
+                session->readPacket();
             }
 
             accept();

@@ -93,7 +93,6 @@ public:
 
     virtual void onPacketReceived(uint16_t packetType, const uint8_t* readBuffer, uint16_t packetSize, std::weak_ptr<ServerSession> session) override
     {
-
         switch(packetType)
         {
             case ConnectRequest::type:
