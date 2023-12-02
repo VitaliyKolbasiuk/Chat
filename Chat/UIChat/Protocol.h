@@ -42,7 +42,7 @@ static_assert(sizeof(RequestHeaderBase) + sizeof(uint64_t) == sizeof(RequestHead
 struct ConnectRequest{
     enum { type = 1 };
     Key         m_publicKey;
-    std::string m_nickname;
+    char        m_nickname[64];
     Key         m_deviceKey;
 };
 

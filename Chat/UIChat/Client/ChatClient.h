@@ -56,7 +56,13 @@ public:
 
         m_connectRequest.m_request.m_deviceKey = m_settings.m_deviceKey;
         m_connectRequest.m_request.m_publicKey = m_settings.m_keyPair.m_publicKey;
-        m_connectRequest.m_request.m_nickname = m_settings.m_username;
+
+        size_t maxSize = sizeof(m_connectRequest.m_request.m_nickname) - 1;
+        if (m_settings.m_username.size() > maxSize)
+        {
+            m_settings.m_username.erase(m_settings.m_username.begin() + maxSize, m_settings.m_username.end());
+        }
+        std::memcpy(&m_connectRequest.m_request.m_nickname, m_settings.m_username.c_str(), m_settings.m_username.size());
 
         if (auto tcpClient = m_tcpClient.lock(); tcpClient )
         {
@@ -79,6 +85,7 @@ public:
 //                HandShakeRequest request;
 //                archive(request);
 //                onHandShake(request);
+                break;
         }
     }
 

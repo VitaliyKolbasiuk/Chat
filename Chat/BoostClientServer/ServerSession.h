@@ -27,12 +27,12 @@ public:
         //async_read( m_socket );
     }
 
-    ~ServerSession() { std::cout << "!!!! ~ClientSession()" << std::endl; }
+    ~ServerSession() { qDebug() << "!!!! ~ClientSession()"; }
 
     template<typename T>
-    void sendPacket(RequestHeader<T>& buffer)
+    void sendPacket(RequestHeader<T>& packet)
     {
-        async_write(m_socket, boost::asio::buffer(&buffer, sizeof(T)),
+        async_write(m_socket, boost::asio::buffer(&packet, sizeof(RequestHeader<T>)),
                     [this] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                         if ( ec )
                         {
@@ -46,8 +46,9 @@ public:
     {
         auto header = std::make_shared<RequestHeaderBase>();
         auto* headerPtr = &(*header);
-        async_read(m_socket, buffer(headerPtr, sizeof(*header)), transfer_all(),
+        async_read(m_socket, buffer(headerPtr, sizeof(*header)), transfer_exactly(sizeof(RequestHeaderBase)),
                    [this, header = std::move(header)] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
+                       qDebug() << "Async_read bytes transferred: " << bytes_transferred;
                        if ( ec )
                        {
                            qDebug() <<  "!!!! Session::readMessage error (0): " << ec.message();
@@ -61,7 +62,7 @@ public:
                        }
                        auto readBuffer = std::make_shared<std::vector<uint8_t >>(header->m_length, 0);
 
-                       async_read( m_socket, buffer(*readBuffer), boost::asio::transfer_all(),
+                       async_read( m_socket, buffer(*readBuffer), transfer_exactly(header->m_length),
                                    [this, readBuffer, header = *header.get()]
                                            ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
                                    {
@@ -76,7 +77,9 @@ public:
                                            qDebug() << "!!! Bytes transferred doesn't equal length";
                                        }
                                        m_chat.onPacketReceived(header.m_type, &(*readBuffer)[0], header.m_length, weak_from_this());
+                                       readPacket();
                                    });
                    });
+
     }
 };

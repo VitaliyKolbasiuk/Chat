@@ -93,25 +93,30 @@ public:
 
     virtual void onPacketReceived(uint16_t packetType, const uint8_t* readBuffer, uint16_t packetSize, std::weak_ptr<ServerSession> session) override
     {
+        qDebug() << "Packet received: " << packetType;
         switch(packetType)
         {
             case ConnectRequest::type:
             {
+                qDebug() << "Connect request received";
                 const ConnectRequest& request = *(reinterpret_cast<const ConnectRequest*>(readBuffer));
-
                 auto it = m_users.find(request.m_publicKey);
                 if (it == m_users.end())
                 {
-                    it = m_users.insert({request.m_publicKey, std::make_shared<UserInfo>(request.m_nickname, request.m_publicKey)}).first;
+                    auto userInfo = std::make_shared<UserInfo>(request.m_nickname, request.m_publicKey);
+                    it = m_users.insert({request.m_publicKey, userInfo}).first;
                     it->second->m_publicKey = request.m_publicKey;
                     it->second->m_nickname = request.m_nickname;
                 }
                 it->second->m_connections.emplace_back(session, request.m_deviceKey);
-
                 generateRandomKey(it->second->m_connections.back().m_handShakeRequest.m_request.m_random);
                 if (auto sessionPtr = session.lock(); sessionPtr)
                 {
+                    qDebug() << "Send packet";
                     sessionPtr->sendPacket(it->second->m_connections.back().m_handShakeRequest);
+                }
+                else{
+                    qDebug() << "!sessionPtr";
                 }
             }
 
