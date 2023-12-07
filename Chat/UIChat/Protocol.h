@@ -8,6 +8,7 @@
 #include <QDebug>
 
 #include "Types.h"
+#include "ed25519/src/ed25519.h"
 
 
 
@@ -27,16 +28,16 @@ struct RequestHeaderBase{
 };
 
 template<typename T>
-struct RequestHeader : public RequestHeaderBase{
-    RequestHeader() {
+struct PacketHeader : public RequestHeaderBase{
+    PacketHeader() {
         m_type = T::type;
         m_length = sizeof(T);
     }
-    T   m_request;
+    T   m_packet;
 
 };
 
-static_assert(sizeof(RequestHeaderBase) + sizeof(uint64_t) == sizeof(RequestHeader<uint64_t>));
+static_assert(sizeof(RequestHeaderBase) + sizeof(uint64_t) == sizeof(PacketHeader<uint64_t>));
 
 // MESSAGE TO SERVER
 struct ConnectRequest{
@@ -47,20 +48,25 @@ struct ConnectRequest{
 };
 
 // MESSAGE TO CLIENT
-struct HandShakeRequest{
+struct HandshakeRequest{
     enum { type = 2 };
     std::array<uint8_t, 64> m_random;
 };
 
 // MESSAGE TO SERVER
-struct HandShakeResponse{
+struct HandshakeResponse{
     enum { type = 3 };
-    Sign m_sign;
+    Key                     m_publicKey;
+    Key                     m_deviceKey;
+    std::array<uint8_t, 64> m_random;
+    Sign                    m_sign;
 
-    template <class Archive>
-    void serialize( Archive & ar )
-    {
-        ar( m_sign );
+    void sign(const PrivateKey& privateKey){
+        ed25519_sign(&m_sign[0], &m_deviceKey[0], sizeof(m_random) + sizeof(m_deviceKey), &m_publicKey[0], &privateKey[0]);
+    }
+
+    bool verify() const {
+        return ed25519_verify(&m_sign[0], &m_deviceKey[0], sizeof(m_random) + sizeof(m_deviceKey), &m_publicKey[0]);
     }
 };
 

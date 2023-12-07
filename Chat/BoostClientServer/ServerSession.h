@@ -30,9 +30,9 @@ public:
     ~ServerSession() { qDebug() << "!!!! ~ClientSession()"; }
 
     template<typename T>
-    void sendPacket(RequestHeader<T>& packet)
+    void sendPacket(PacketHeader<T>& packet)
     {
-        async_write(m_socket, boost::asio::buffer(&packet, sizeof(RequestHeader<T>)),
+        async_write(m_socket, boost::asio::buffer(&packet, sizeof(PacketHeader<T>)),
                     [this] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                         if ( ec )
                         {
@@ -81,5 +81,10 @@ public:
                                    });
                    });
 
+    }
+
+    void closeConnection()
+    {
+        m_socket.close();
     }
 };

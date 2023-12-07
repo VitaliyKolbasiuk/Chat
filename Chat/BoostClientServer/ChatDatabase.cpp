@@ -57,6 +57,8 @@ public:
         //fillTestData();
     }
 
+    // TODO unread messages in db
+
     void createChatRoomTable(const std::string& chatRoomName)
     {
         Query query(m_db);

@@ -26,7 +26,7 @@ struct Connection
 {
     std::weak_ptr<ServerSession>    m_session;
     Key                             m_deviceKey;
-    RequestHeader<HandShakeRequest> m_handShakeRequest;
+    PacketHeader<HandshakeRequest>  m_handshakeRequest;
 };
 
 struct UserInfo
@@ -48,7 +48,8 @@ public:
 
     bool addClient(User client)
     {
-        if (m_clients.find(client.m_username) != m_clients.end()){
+        if (m_clients.find(client.m_username) != m_clients.end())
+        {
             return false;
         }
         m_clients[client.m_username] = client;
@@ -58,7 +59,8 @@ public:
     bool removeClient(User client)
     {
         m_clients.erase(client.m_username);
-        if (m_clients.empty()){
+        if (m_clients.empty())
+        {
             return false;
         }
         return true;
@@ -100,6 +102,8 @@ public:
             {
                 qDebug() << "Connect request received";
                 const ConnectRequest& request = *(reinterpret_cast<const ConnectRequest*>(readBuffer));
+
+                //  Looking if user had any previous connection
                 auto it = m_users.find(request.m_publicKey);
                 if (it == m_users.end())
                 {
@@ -108,18 +112,62 @@ public:
                     it->second->m_publicKey = request.m_publicKey;
                     it->second->m_nickname = request.m_nickname;
                 }
+
+                // Add connection
                 it->second->m_connections.emplace_back(session, request.m_deviceKey);
-                generateRandomKey(it->second->m_connections.back().m_handShakeRequest.m_request.m_random);
+
+                // Send HandShake
+                generateRandomKey(it->second->m_connections.back().m_handshakeRequest.m_packet.m_random);
                 if (auto sessionPtr = session.lock(); sessionPtr)
                 {
                     qDebug() << "Send packet";
-                    sessionPtr->sendPacket(it->second->m_connections.back().m_handShakeRequest);
+                    sessionPtr->sendPacket(it->second->m_connections.back().m_handshakeRequest);
                 }
                 else{
                     qDebug() << "!sessionPtr";
                 }
+                break;
             }
+            case HandshakeResponse::type:
+            {
+                const HandshakeResponse& response = *(reinterpret_cast<const HandshakeResponse*>(readBuffer));
+                if (!response.verify())
+                {
+                    qDebug() << "Bad Handshake response";
+                    if (auto sessionPtr = session.lock(); sessionPtr)
+                    {
+                        qDebug() << "Close connection";
+                        sessionPtr->closeConnection();
+                    }
+                }
 
+                // Find user
+                auto it = m_users.find(response.m_publicKey);
+                if (it == m_users.end())
+                {
+                    if (auto sessionPtr = session.lock(); sessionPtr)
+                    {
+                        qDebug() << "Close connection2";
+                        sessionPtr->closeConnection();
+                    }
+                }
+
+                // Find connection
+                auto connectionIt = std::find_if(it->second->m_connections.begin(), it->second->m_connections.end(), [&](const auto& connection){
+                   return connection.m_deviceKey == response.m_deviceKey;
+                });
+                if (connectionIt == it->second->m_connections.end())
+                {
+                    if (auto sessionPtr = session.lock(); sessionPtr)
+                    {
+                        qDebug() << "Close connection3";
+                        sessionPtr->closeConnection();
+                    }
+                }
+                qDebug() << "Successfull Handshake response";
+
+                break;
+            }
         }
     }
 

@@ -47,9 +47,9 @@ public:
     }
 
     template<typename T>
-    void sendPacket(RequestHeader<T>& buffer)
+    void sendPacket(PacketHeader<T>& buffer)
     {
-        async_write(m_socket, boost::asio::buffer(&buffer, sizeof(RequestHeader<T>)),
+        async_write(m_socket, boost::asio::buffer(&buffer, sizeof(PacketHeader<T>)),
                             [this] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
             qDebug() << "Async_write bytes transferred: " << bytes_transferred;
             if ( ec )

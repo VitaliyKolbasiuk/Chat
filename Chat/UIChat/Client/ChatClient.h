@@ -32,7 +32,7 @@ private:
     Settings& m_settings;
 
 private:
-    RequestHeader<ConnectRequest> m_connectRequest;
+    PacketHeader<ConnectRequest> m_connectRequest;
 
 
 public:
@@ -54,56 +54,56 @@ public:
     virtual void onSocketConnected() override
     {
 
-        m_connectRequest.m_request.m_deviceKey = m_settings.m_deviceKey;
-        m_connectRequest.m_request.m_publicKey = m_settings.m_keyPair.m_publicKey;
+        m_connectRequest.m_packet.m_deviceKey = m_settings.m_deviceKey;
+        m_connectRequest.m_packet.m_publicKey = m_settings.m_keyPair.m_publicKey;
 
-        size_t maxSize = sizeof(m_connectRequest.m_request.m_nickname) - 1;
+        size_t maxSize = sizeof(m_connectRequest.m_packet.m_nickname) - 1;
         if (m_settings.m_username.size() > maxSize)
         {
             m_settings.m_username.erase(m_settings.m_username.begin() + maxSize, m_settings.m_username.end());
         }
-        std::memcpy(&m_connectRequest.m_request.m_nickname, m_settings.m_username.c_str(), m_settings.m_username.size());
+        std::memcpy(&m_connectRequest.m_packet.m_nickname, m_settings.m_username.c_str(), m_settings.m_username.size());
+
+        if (auto tcpClient = m_tcpClient.lock(); tcpClient )
+        {
+            qDebug() << "Started read loop";
+            tcpClient->readPacket();        //readPacket() will always call itself
+        }
 
         if (auto tcpClient = m_tcpClient.lock(); tcpClient )
         {
             qDebug() << "Connect request has been sent";
             tcpClient->sendPacket(m_connectRequest);
-            qDebug() << "Waiting packet";
-            tcpClient->readPacket();
         }
     }
 
     virtual void onPacketReceived ( uint16_t packetType, uint8_t* packet, uint16_t packetSize) override
     {
-//        std::stringstream ss;
-//        ss.write(reinterpret_cast<const char*>(packet), packetSize);
-//        cereal::BinaryInputArchive archive( ss );
         switch(packetType)
         {
-            case HandShakeRequest::type:
-                qDebug() << "HandShaked received";
-//                HandShakeRequest request;
-//                archive(request);
-//                onHandShake(request);
+            case HandshakeRequest::type:
+                qDebug() << "Handshake received";
+                HandshakeRequest request;
+                assert(packetSize == sizeof(request));
+                std::memcpy(&request, packet, packetSize);
+                onHandshake(request);
                 break;
         }
     }
 
-    void onHandShake(const HandShakeRequest& request)
+    void onHandshake(const HandshakeRequest& request)
     {
-//        HandShakeResponse response;
-//        ed25519_sign(&response.m_sign[0],
-//                     &request.m_random[0],
-//                     sizeof(request.m_random),
-//                     &m_settings.m_keyPair.m_publicKey[0],
-//                     &m_settings.m_keyPair.m_privateKey[0]);
-//
-//        AutoBuffer buffer = createAutoBuffer(response);
-//
-//        if (auto tcpClient = m_tcpClient.lock(); tcpClient )
-//        {
-//            tcpClient->sendPacket(std::move(buffer));
-//        }
+        PacketHeader<HandshakeResponse> response;
+        response.m_packet.m_publicKey = m_settings.m_keyPair.m_publicKey;
+        response.m_packet.m_deviceKey = m_settings.m_deviceKey;
+        response.m_packet.m_random = request.m_random;
+        response.m_packet.sign(m_settings.m_keyPair.m_privateKey);
+
+        if (auto tcpClient = m_tcpClient.lock(); tcpClient )
+        {
+            qDebug() << "Handshake response has been sent";
+            tcpClient->sendPacket(response);
+        }
     }
 
 

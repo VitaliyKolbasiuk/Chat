@@ -58,7 +58,17 @@ add_executable(StartServer
     BoostClientServer/Server.cpp
     BoostClientServer/ChatInterfaces.h
     BoostClientServer/ChatDatabase.cpp
-        BoostClientServer/ServerSession.h
+    BoostClientServer/ServerSession.h
+    UIChat/ed25519/src/add_scalar.cpp
+    UIChat/ed25519/src/fe.cpp
+    UIChat/ed25519/src/ge.cpp
+    UIChat/ed25519/src/key_exchange.cpp
+    UIChat/ed25519/src/keypair.cpp
+    UIChat/ed25519/src/sc.cpp
+    UIChat/ed25519/src/seed.cpp
+    UIChat/ed25519/src/sha512.cpp
+    UIChat/ed25519/src/sign.cpp
+    UIChat/ed25519/src/verify.cpp
 )
 
 add_executable(StartClient
