@@ -57,16 +57,17 @@ struct HandshakeRequest{
 struct HandshakeResponse{
     enum { type = 3 };
     Key                     m_publicKey;
+    char                    m_nickname[64];
     Key                     m_deviceKey;
     std::array<uint8_t, 64> m_random;
     Sign                    m_sign;
 
     void sign(const PrivateKey& privateKey){
-        ed25519_sign(&m_sign[0], &m_deviceKey[0], sizeof(m_random) + sizeof(m_deviceKey), &m_publicKey[0], &privateKey[0]);
+        ed25519_sign(&m_sign[0], &m_deviceKey[0], sizeof(m_random) + sizeof(m_nickname) + sizeof(m_deviceKey), &m_publicKey[0], &privateKey[0]);
     }
 
     bool verify() const {
-        return ed25519_verify(&m_sign[0], &m_deviceKey[0], sizeof(m_random) + sizeof(m_deviceKey), &m_publicKey[0]);
+        return ed25519_verify(&m_sign[0], &m_deviceKey[0], sizeof(m_random) + sizeof(m_nickname) + sizeof(m_deviceKey), &m_publicKey[0]);
     }
 };
 

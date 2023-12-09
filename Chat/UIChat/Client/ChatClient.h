@@ -95,6 +95,8 @@ public:
     {
         PacketHeader<HandshakeResponse> response;
         response.m_packet.m_publicKey = m_settings.m_keyPair.m_publicKey;
+        assert(m_settings.m_username.size() < sizeof(response.m_packet.m_nickname));
+        std::memcpy(&response.m_packet.m_nickname, &m_settings.m_username, m_settings.m_username.size() + 1);
         response.m_packet.m_deviceKey = m_settings.m_deviceKey;
         response.m_packet.m_random = request.m_random;
         response.m_packet.sign(m_settings.m_keyPair.m_privateKey);

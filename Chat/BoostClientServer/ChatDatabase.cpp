@@ -1,4 +1,5 @@
 #include "ChatInterfaces.h"
+#include "Types.h"
 
 #include <iostream>
 #include <QSqlDatabase>
@@ -10,14 +11,16 @@ struct Query{
     QSqlQuery m_query;
     Query(QSqlDatabase db) : m_query(db) {}
 
-    void exec(const std::string& sqlQuery)
+    bool exec(const std::string& sqlQuery)
     {
         qDebug() << "sqlQuery: " << sqlQuery;
         m_query.exec(QString::fromStdString(sqlQuery));
         if (!m_query.isValid())
         {
             qDebug() << "Error: " << m_query.lastError().text();
+            return false;
         }
+        return true;
     }
     void execq(const QString& sqlQuery)
     {
@@ -41,7 +44,7 @@ class ChatDatabase : public IChatDatabase
 public:
     ChatDatabase() {
         //qDebug() << QSqlDatabase::drivers();
-        std::filesystem::remove("ChatDatabase.sqlite");
+        //std::filesystem::remove("ChatDatabase.sqlite");
 
         m_db = QSqlDatabase::addDatabase("QSQLITE");
         m_db.setHostName("localhost");
@@ -58,6 +61,7 @@ public:
     }
 
     // TODO unread messages in db
+
 
     void createChatRoomTable(const std::string& chatRoomName)
     {
@@ -78,7 +82,13 @@ public:
                    ownerPublicKey TEXT VARCHAR(32),\
                    isPrivate INT\
                    );");
-        query.exec("CREATE TABLE IF NOT EXISTS UserCatalogue (userId INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT);");
+
+        query.exec("CREATE TABLE IF NOT EXISTS UserCatalogue \
+                   (userId INTEGER PRIMARY KEY AUTOINCREMENT, \
+                   publicKey CHARACTER(64),\
+                   deviceKey CHARACTER(64), \
+                   nickname TEXT\
+                   );");
 
         //query.exec("INSERT INTO ChatRoomCatalogue (chatRoomName, chatRoomTableName) VALUES ('Room1', 'Room1_members');");
     }
@@ -100,15 +110,33 @@ public:
         return chatRoomId;
     }
 
-    int getUserId(const std::string& username)
+    bool getUserId(const Key& publicKey, int& userId)
     {
         Query query(m_db);
-        query.exec("SELECT chatRoomId FROM ChatRoomCatalogue WHERE chatRoomName = '" + username + "' ;");
-        auto userId = query.value(0).toInt();
-        return userId;
+        bool ok;
+        query.exec("SELECT userId FROM UserCatalogue WHERE publicKey = '" + toString((std::array<uint8_t, 32>&)publicKey) + "' ;");
+        userId = query.value(0).toInt(&ok);
+        return ok;
     }
 
-    std::vector<std::string> getChatRoomList(std::string userUniqueKey) override
+    void onUserConnected(const Key& publicKey, const Key& deviceKey, const std::string& nickname) override
+    {
+        Query query(m_db);
+        bool ok;
+        query.exec("SELECT userId FROM UserCatalogue WHERE publicKey = '" + toString((std::array<uint8_t, 32>&)publicKey) + "' ;");
+        auto userId = query.value(0).toInt(&ok);
+
+        if (!ok)
+        {
+            if (!query.exec("INSERT INTO UserCatalogue (publicKey , deviceKey, nickname) VALUES \
+                        ('" + toString((std::array<uint8_t, 32>&)publicKey) + "', '" + toString((std::array<uint8_t, 32>&)deviceKey) + "', '" + nickname + "');"))
+            {
+                qWarning() << "User couldn't be added to database";
+            }
+        }
+    }
+
+    std::vector<std::string> getChatRoomList(const std::string& userUniqueKey) override
     {
         std::vector<std::string> chatRooms;
 
@@ -129,13 +157,15 @@ public:
 
     void test() override
     {
-        Query query(m_db);
-        query.exec("SELECT * FROM ChatRoomCatalogue;");
-        while (query.m_query.next()){
-        qDebug() << query.value(0).toString();
-        qDebug() << query.value(1).toString();
-        }
-//        createChatRoomCatalogue();
+//        Query query(m_db);
+//        query.exec("SELECT * FROM ChatRoomCatalogue;");
+//        while (query.m_query.next())
+//        {
+//            qDebug() << query.value(0).toString();
+//            qDebug() << query.value(1).toString();
+//        }
+        createChatRoomCatalogue();
+        //getUserId({});
 //        createChatRoomTable("Room1");
 //        createChatRoomTable("Room2");
 //        query.m_query.next();
@@ -144,7 +174,6 @@ public:
 //        int chatRoomId = getChatRoomId("Room1");
 //        appendMessageToChatRoom(chatRoomId, "Welcome to the server", 1, 224000 );
     }
-
 
 };
 

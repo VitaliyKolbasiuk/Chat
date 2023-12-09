@@ -2,6 +2,8 @@
 #include <iostream>
 #include <boost/asio.hpp>
 
+#include "Types.h"
+
 // messages from server to client
 #define CHAT_ROOM_LIST_CMD        "CHAT_ROOM_LIST"        // cmd;{chat_room_name;chat_room_id;}*
 #define MESSAGE_FROM_CMD          "MESSAGE_FROM"          // cmd;message;chat_room;username
@@ -16,6 +18,10 @@
 
 using namespace boost::asio;
 using ip::tcp;
+
+inline io_context gDatabaseIoContext;
+inline boost::asio::executor_work_guard<decltype(gDatabaseIoContext.get_executor())> work{gDatabaseIoContext.get_executor()};
+inline io_context gServerIoContext;
 
 class ServerSession;
 
@@ -42,7 +48,8 @@ class IChatDatabase
 public:
     virtual ~IChatDatabase() = default;
     virtual void test() = 0;
-    virtual std::vector<std::string> getChatRoomList(std::string userUniqueKey) = 0;
+    virtual std::vector<std::string> getChatRoomList(const std::string& userUniqueKey) = 0;
+    virtual void onUserConnected(const Key& publicKey, const Key& deviceKey, const std::string& nickname) = 0;
 };
 
 IChatDatabase* createDatabase();

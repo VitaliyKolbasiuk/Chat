@@ -164,8 +164,28 @@ public:
                         sessionPtr->closeConnection();
                     }
                 }
+
+                // Security from malicious
+                if (connectionIt->m_handshakeRequest.m_packet.m_random != response.m_random)
+                {
+                    if (auto sessionPtr = session.lock(); sessionPtr)
+                    {
+                        qDebug() << "Close connection4";
+                        sessionPtr->closeConnection();
+                    }
+                }
+
                 qDebug() << "Successfull Handshake response";
 
+                boost::asio::post( gDatabaseIoContext, [=, this]() mutable
+                {
+                    m_database.onUserConnected(response.m_publicKey, response.m_deviceKey, response.m_nickname);
+                } );
+
+                if (auto sessionPtr = session.lock(); sessionPtr)
+                {
+                    sessionPtr->readPacket();
+                }
                 break;
             }
         }
