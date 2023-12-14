@@ -17,7 +17,7 @@ struct Query{
         m_query.exec(QString::fromStdString(sqlQuery));
         if (!m_query.isValid())
         {
-            qDebug() << "Error: " << m_query.lastError().text();
+            qCritical() << "Error: " << m_query.lastError().text();
             return false;
         }
         return true;

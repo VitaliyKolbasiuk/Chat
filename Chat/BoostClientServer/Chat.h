@@ -118,13 +118,13 @@ public:
 
                 // Send HandShake
                 generateRandomKey(it->second->m_connections.back().m_handshakeRequest.m_packet.m_random);
-                if (auto sessionPtr = session.lock(); sessionPtr)
+                if (const auto& sessionPtr = session.lock(); sessionPtr)
                 {
                     qDebug() << "Send packet";
                     sessionPtr->sendPacket(it->second->m_connections.back().m_handshakeRequest);
                 }
                 else{
-                    qDebug() << "!sessionPtr";
+                    qCritical() << "!sessionPtr";
                 }
                 break;
             }
@@ -133,46 +133,50 @@ public:
                 const HandshakeResponse& response = *(reinterpret_cast<const HandshakeResponse*>(readBuffer));
                 if (!response.verify())
                 {
-                    qDebug() << "Bad Handshake response";
+                    qCritical() << "Bad Handshake response";
                     if (auto sessionPtr = session.lock(); sessionPtr)
                     {
-                        qDebug() << "Close connection";
+                        qCritical() << "Close connection";
                         sessionPtr->closeConnection();
                     }
+                    return;
                 }
 
                 // Find user
-                auto it = m_users.find(response.m_publicKey);
+                const auto& it = m_users.find(response.m_publicKey);
                 if (it == m_users.end())
                 {
-                    if (auto sessionPtr = session.lock(); sessionPtr)
+                    if (const auto& sessionPtr = session.lock(); sessionPtr)
                     {
-                        qDebug() << "Close connection2";
+                        qCritical() << "Close connection2";
                         sessionPtr->closeConnection();
                     }
+                    return;
                 }
 
                 // Find connection
-                auto connectionIt = std::find_if(it->second->m_connections.begin(), it->second->m_connections.end(), [&](const auto& connection){
+                const auto& connectionIt = std::find_if(it->second->m_connections.begin(), it->second->m_connections.end(), [&](const auto& connection){
                    return connection.m_deviceKey == response.m_deviceKey;
                 });
                 if (connectionIt == it->second->m_connections.end())
                 {
-                    if (auto sessionPtr = session.lock(); sessionPtr)
+                    if (const auto& sessionPtr = session.lock(); sessionPtr)
                     {
-                        qDebug() << "Close connection3";
+                        qCritical() << "Close connection3";
                         sessionPtr->closeConnection();
                     }
+                    return;
                 }
 
                 // Security from malicious
                 if (connectionIt->m_handshakeRequest.m_packet.m_random != response.m_random)
                 {
-                    if (auto sessionPtr = session.lock(); sessionPtr)
+                    if (const auto& sessionPtr = session.lock(); sessionPtr)
                     {
-                        qDebug() << "Close connection4";
+                        qCritical() << "Close connection4";
                         sessionPtr->closeConnection();
                     }
+                    return;
                 }
 
                 qDebug() << "Successfull Handshake response";
@@ -182,7 +186,7 @@ public:
                     m_database.onUserConnected(response.m_publicKey, response.m_deviceKey, response.m_nickname);
                 } );
 
-                if (auto sessionPtr = session.lock(); sessionPtr)
+                if (const auto& sessionPtr = session.lock(); sessionPtr)
                 {
                     sessionPtr->readPacket();
                 }

@@ -40,7 +40,7 @@ public:
 
     }
 
-    void setTcpClient(std::weak_ptr<TcpClient> tcpClient)
+    void setTcpClient(const std::weak_ptr<TcpClient>& tcpClient)
     {
         m_tcpClient = tcpClient;
     }
@@ -64,13 +64,13 @@ public:
         }
         std::memcpy(&m_connectRequest.m_packet.m_nickname, m_settings.m_username.c_str(), m_settings.m_username.size());
 
-        if (auto tcpClient = m_tcpClient.lock(); tcpClient )
+        if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
         {
             qDebug() << "Started read loop";
             tcpClient->readPacket();        //readPacket() will always call itself
         }
 
-        if (auto tcpClient = m_tcpClient.lock(); tcpClient )
+        if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
         {
             qDebug() << "Connect request has been sent";
             tcpClient->sendPacket(m_connectRequest);
@@ -96,12 +96,12 @@ public:
         PacketHeader<HandshakeResponse> response;
         response.m_packet.m_publicKey = m_settings.m_keyPair.m_publicKey;
         assert(m_settings.m_username.size() < sizeof(response.m_packet.m_nickname));
-        std::memcpy(&response.m_packet.m_nickname, &m_settings.m_username, m_settings.m_username.size() + 1);
+        std::memcpy(&response.m_packet.m_nickname, &m_settings.m_username[0], m_settings.m_username.size() + 1);
         response.m_packet.m_deviceKey = m_settings.m_deviceKey;
         response.m_packet.m_random = request.m_random;
         response.m_packet.sign(m_settings.m_keyPair.m_privateKey);
 
-        if (auto tcpClient = m_tcpClient.lock(); tcpClient )
+        if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
         {
             qDebug() << "Handshake response has been sent";
             tcpClient->sendPacket(response);
@@ -149,7 +149,7 @@ public:
         std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
         std::ostream os(&(*wrStreambuf));
         os << message + m_chatRoomName + ";" + m_chatClientName + ";\n";
-        if (auto tcpClient = m_tcpClient.lock(); tcpClient )
+        if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
         {
             //tcpClient->sendMessageToServer(wrStreambuf);
             return true;

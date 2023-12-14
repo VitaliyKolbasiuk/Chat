@@ -24,7 +24,7 @@ public:
 
     ~TcpClient()
     {
-        qDebug() << "!!!! ~Client(): ";
+        qCritical() << "!!!! ~Client(): ";
     }
 
     void connect(std::string addr, int port)
@@ -36,7 +36,7 @@ public:
         {
             if ( error )
             {
-                std::cout << "Connection error: " << error.message() << std::endl;
+                qCritical() <<"Connection error: " << error.message();
             }
             else
             {
@@ -54,7 +54,7 @@ public:
             qDebug() << "Async_write bytes transferred: " << bytes_transferred;
             if ( ec )
             {
-                std::cout << "!!!! Session::sendMessage error (1): " << ec.message() << std::endl;
+                qCritical() << "!!!! Session::sendMessage error (1): " << ec.message();
                 exit(-1);
             }
         });
@@ -69,13 +69,13 @@ public:
                        qDebug() << "Async_read bytes transferred: " << bytes_transferred;
                        if ( ec )
                        {
-                           qDebug() <<  "!!!! Session::readMessage error (0): " << ec.message();
+                           qCritical() <<  "!!!! Session::readMessage error (0): " << ec.message();
                            return;
                        }
                        qDebug() << "Async_read: " << header->m_length << ' ' << header->m_type;
                        if (header->m_length == 0)
                        {
-                           qDebug() <<  "!!!! Length = 0";
+                           qCritical() <<  "!!!! Length = 0";
                            return;
                        }
                        auto readBuffer = std::make_shared<std::vector<uint8_t >>(header->m_length, 0);
@@ -86,13 +86,12 @@ public:
                                    {
                                        if ( ec )
                                        {
-                                           std::cout << "!!!! Session::readMessage error (1): " << ec.message()
-                                                     << std::endl;
+                                           qCritical() << "!!!! Session::readMessage error (1): " << ec.message();
                                            return;
                                        }
                                        if (bytes_transferred != header.m_length)
                                        {
-                                           qDebug() << "!!! Bytes transferred doesn't equal length";
+                                           qCritical() << "!!! Bytes transferred doesn't equal length";
                                        }
                                        m_client->onPacketReceived(header.m_type, &(*readBuffer)[0], header.m_length);
                                        readPacket();
@@ -112,7 +111,7 @@ public:
         {
             if ( error_code )
             {
-                std::cout << "Client read error: " << error_code.message() << std::endl;
+                qCritical()<< "Client read error: " << error_code.message();
             }
             else
             {

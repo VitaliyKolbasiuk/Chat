@@ -82,7 +82,6 @@ add_executable(StartClient
         UIChat/Client/ChatClient.h
         UIChat/Client/ClientInterfaces.h
         UIChat/Client/TcpClient.h
-        UIChat/Client/Terminal.h
         UIChat/Protocol.h
         UIChat/CreateChatRoom.h
         UIChat/CreateChatRoom.cpp

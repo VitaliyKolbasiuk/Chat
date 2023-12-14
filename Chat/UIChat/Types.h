@@ -4,6 +4,8 @@
 
 #pragma once
 #include <cereal/types/array.hpp>
+#include <QDebug>
+
 using Key = std::array<uint8_t, 32>;
 using PrivateKey = std::array<uint8_t, 64>;
 using Sign = std::array<uint8_t, 64>;
@@ -29,14 +31,52 @@ inline char hexTable[] = {
 };
 
 template<long unsigned int N>
+inline void fromString(const std::string& s, std::array<uint8_t, N>& array){
+    if (s.size() != array.size() * 2)
+    {
+        throw(std::runtime_error("Bad string: " + s));
+    }
+    std::string str = s;
+
+    std::transform(str.begin(), str.end(), str.begin(),
+                              [](unsigned char c){ return std::tolower(c); });
+
+    for (int i = 0; i < str.size(); i += 2)
+    {
+        uint8_t c = (uint8_t)str[i];
+        if (c >= uint8_t('a'))
+        {
+            array[i / 2] = (c - uint8_t('a') + 10) << 4;
+        }
+        else
+        {
+            array[i / 2] = (c - uint8_t('0'))<< 4;
+        }
+
+        c = (uint8_t)str[i + 1];
+        if (c >= uint8_t('a'))
+        {
+            array[i / 2] |= c - uint8_t('a') + 10;
+        }
+        else
+        {
+            array[i / 2] |= c - uint8_t('0');
+        }
+    }
+}
+
+template<long unsigned int N>
 inline std::string toString(const std::array<uint8_t, N>& array){
 
     std::string s(N * 2, '0');
 
-    for (int i = 0; i < (N * 2); i += 2)
+    for (int i = 0; i < N; i++)
     {
-        s[i] = array[i];
-        s[i + 1] = array[i + 1];
+        s[i * 2] = hexTable[array[i] * 2];
+        s[i * 2 + 1] = hexTable[array[i] * 2 + 1];
     }
+//    std::array<uint8_t, N> array2;
+//    fromString(s, array2);
+//    assert(array == array2);
     return s;
 }

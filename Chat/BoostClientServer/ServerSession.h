@@ -27,7 +27,7 @@ public:
         //async_read( m_socket );
     }
 
-    ~ServerSession() { qDebug() << "!!!! ~ClientSession()"; }
+    ~ServerSession() { qCritical() << "!!!! ~ClientSession()"; }
 
     template<typename T>
     void sendPacket(PacketHeader<T>& packet)
@@ -36,7 +36,7 @@ public:
                     [this] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                         if ( ec )
                         {
-                            std::cout << "!!!! Session::sendMessage error (1): " << ec.message() << std::endl;
+                            qCritical()<< "!!!! Session::sendMessage error (1): " << ec.message();
                             exit(-1);
                         }
                     });
@@ -51,13 +51,13 @@ public:
                        qDebug() << "Async_read bytes transferred: " << bytes_transferred;
                        if ( ec )
                        {
-                           qDebug() <<  "!!!! Session::readMessage error (0): " << ec.message();
+                           qCritical() <<  "!!!! Session::readMessage error (0): " << ec.message();
                            return;
                        }
                        qDebug() << "Async_read: " << header->m_length << ' ' << header->m_type;
                        if (header->m_length == 0)
                        {
-                           qDebug() <<  "!!!! Length = 0";
+                           qCritical()<<  "!!!! Length = 0";
                            return;
                        }
                        auto readBuffer = std::make_shared<std::vector<uint8_t >>(header->m_length, 0);
@@ -68,13 +68,12 @@ public:
                                    {
                                        if ( ec )
                                        {
-                                           std::cout << "!!!! Session::readMessage error (1): " << ec.message()
-                                                     << std::endl;
+                                           qCritical()<< "!!!! Session::readMessage error (1): " << ec.message();
                                            return;
                                        }
                                        if (bytes_transferred != header.m_length)
                                        {
-                                           qDebug() << "!!! Bytes transferred doesn't equal length";
+                                           qCritical() << "!!! Bytes transferred doesn't equal length";
                                        }
                                        m_chat.onPacketReceived(header.m_type, &(*readBuffer)[0], header.m_length, weak_from_this());
                                        readPacket();
