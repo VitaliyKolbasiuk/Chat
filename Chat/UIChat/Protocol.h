@@ -6,6 +6,7 @@
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
 #include <QDebug>
+#include <memory>
 
 #include "Types.h"
 #include "ed25519/src/ed25519.h"
@@ -22,13 +23,13 @@ struct Seed{
     }
 };
 
-struct RequestHeaderBase{
+struct PacketHeaderBase{
     uint32_t m_type;
     uint32_t m_length;
 };
 
 template<typename T>
-struct PacketHeader : public RequestHeaderBase{
+struct PacketHeader : public PacketHeaderBase{
     PacketHeader() {
         m_type = T::type;
         m_length = sizeof(T);
@@ -37,7 +38,7 @@ struct PacketHeader : public RequestHeaderBase{
 
 };
 
-static_assert(sizeof(RequestHeaderBase) + sizeof(uint64_t) == sizeof(PacketHeader<uint64_t>));
+static_assert(sizeof(PacketHeaderBase) + sizeof(uint64_t) == sizeof(PacketHeader<uint64_t>));
 
 // MESSAGE TO SERVER
 struct ConnectRequest{
@@ -71,5 +72,43 @@ struct HandshakeResponse{
     }
 };
 
+struct ChatRoomListPacket{
+    enum { type = 4};
 
+    ~ChatRoomListPacket()
+    {
+        delete[] reinterpret_cast<uint8_t*>(this);
+    }
+
+    uint16_t length()
+    {
+        return reinterpret_cast<PacketHeaderBase*>(this)->m_length;
+    }
+};
+
+inline ChatRoomListPacket* createChatRoomList(const std::vector<std::string>& chatRoomList)
+{
+    size_t bufferSize = sizeof(PacketHeaderBase);
+    for(const auto& chatRoom : chatRoomList)
+    {
+        bufferSize += chatRoom.size() + 2 + 1;  // length of string + zero-end
+    }
+    uint8_t* buffer = new uint8_t[bufferSize];
+
+    PacketHeaderBase* header = reinterpret_cast<PacketHeaderBase*>(buffer);
+    header->m_type = ChatRoomListPacket::type;
+    header->m_length = (uint32_t)bufferSize;
+    if (bufferSize > 0)
+    {
+        uint8_t* ptr = buffer + sizeof(PacketHeaderBase);
+        for(const auto& chatRoom : chatRoomList)
+        {
+            uint16_t length = chatRoom.size() + 1;
+            std::memcpy(ptr, &length, sizeof(length));
+            ptr += sizeof(length);
+            std::memcpy(ptr, chatRoom.c_str(), length);
+        }
+    }
+    return reinterpret_cast<ChatRoomListPacket*>(buffer);
+}
 

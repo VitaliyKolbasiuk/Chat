@@ -62,9 +62,9 @@ public:
 
     void readPacket()
     {
-        auto header = std::make_shared<RequestHeaderBase>();
+        auto header = std::make_shared<PacketHeaderBase>();
         auto* headerPtr = &(*header);
-        async_read(m_socket, buffer(headerPtr, sizeof(*header)), transfer_exactly(sizeof(RequestHeaderBase)),
+        async_read(m_socket, buffer(headerPtr, sizeof(*header)), transfer_exactly(sizeof(PacketHeaderBase)),
                    [this, header = std::move(header)] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                        qDebug() << "Async_read bytes transferred: " << bytes_transferred;
                        if ( ec )

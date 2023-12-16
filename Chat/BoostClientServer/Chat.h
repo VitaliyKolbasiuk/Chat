@@ -183,7 +183,7 @@ public:
 
                 boost::asio::post( gDatabaseIoContext, [=, this]() mutable
                 {
-                    m_database.onUserConnected(response.m_publicKey, response.m_deviceKey, response.m_nickname);
+                    m_database.onUserConnected(response.m_publicKey, response.m_deviceKey, response.m_nickname, session);
                 } );
 
                 if (const auto& sessionPtr = session.lock(); sessionPtr)
