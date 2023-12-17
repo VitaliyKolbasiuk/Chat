@@ -11,7 +11,7 @@
 
 struct Query{
     QSqlQuery m_query;
-    Query(QSqlDatabase db) : m_query(db) {}
+    Query(const QSqlDatabase& db) : m_query(db) {}
 
     bool prepare(const std::string& sqlQuery)
     {
@@ -25,6 +25,7 @@ struct Query{
 
     bool exec()
     {
+        qDebug() << "Query: " << m_query.lastQuery();
         if (!m_query.exec())
         {
             qCritical() << "Exec query ERROR: " << m_query.lastError().text();
@@ -38,9 +39,19 @@ struct Query{
         m_query.bindValue(placeholder, QString::fromStdString(value));
     }
 
+    void bindValue(const QString& placeholder, const int& value)
+    {
+        m_query.bindValue(placeholder, value);
+    }
+
     bool next()
     {
-        return m_query.next();
+        if (!m_query.next())
+        {
+            qCritical() << "next query ERROR: " << m_query.lastError().text();
+            return false;
+        }
+        return true;
     }
 
     QVariant value(int i)
@@ -84,6 +95,8 @@ public:
                                                                          "userId INT, "
                                                                          "FOREIGN KEY (userId) REFERENCES UserCatalogue(userId)"
                                                                      ");");
+        query.exec();
+
         query.prepare("CREATE TABLE IF NOT EXISTS " + chatRoomTableName + " "
                                                                      "("
                                                                         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -92,7 +105,10 @@ public:
                                                                         "time BIGINT, "
                                                                         "FOREIGN KEY (senderIdRef) REFERENCES UserCatalogue(userId)"
                                                                      ");");
+        query.exec();
+
         query.prepare("INSERT INTO ChatRoomCatalogue (chatRoomTableName) VALUES ('" + chatRoomTableName + "');");
+        query.exec();
     }
 
     void createChatRoomCatalogue()
@@ -153,24 +169,27 @@ public:
         query.bindValue(":publicKey", toString((std::array<uint8_t, 32>&)publicKey));
         query.bindValue(":deviceKey",  toString((std::array<uint8_t, 32>&)deviceKey));
         query.bindValue(":nickname", nickname);
+        query.exec();
 
-        query.prepare("SELECT userId FROM UserCatalogue WHERE publicKey = :publickey");
+        query.prepare("SELECT userId FROM UserCatalogue WHERE publicKey = :publicKey;");
         query.bindValue(":publicKey", toString((std::array<uint8_t, 32>&)publicKey));
 
         if (query.exec())
         {
-            query.next();
-            int userId = query.value(0).toInt();
-            std::vector<std::string> chatRoomList = getChatRoomList(userId);
-
-            boost::asio::post( gServerIoContext, [=, this]() mutable
+            if(query.next())
             {
-                if (const auto& sessionPtr = session.lock(); sessionPtr)
+                int userId = query.value(0).toInt();
+                std::vector<std::string> chatRoomList = getChatRoomList(userId);
+
+                boost::asio::post(gServerIoContext, [=, this]() mutable
                 {
-                    ChatRoomListPacket* packet = createChatRoomList(chatRoomList);
-                    sessionPtr->sendBufferedPacket<ChatRoomListPacket>(packet);
-                }
-            } );
+                    if (const auto &sessionPtr = session.lock(); sessionPtr)
+                    {
+                        ChatRoomListPacket *packet = createChatRoomList(chatRoomList);
+                        sessionPtr->sendBufferedPacket<ChatRoomListPacket>(packet);
+                    }
+                });
+            }
         }
         else
         {
@@ -183,15 +202,18 @@ public:
         std::vector<std::string> chatRooms;
 
         Query query(m_db);
-        query.prepare("SELECT cr.chatRoomId, cr.chatRoomName, cr.chatRoomTableName FROM ChatRoomCatalogue cr;");
+        query.prepare("SELECT chatRoomId, chatRoomName, chatRoomTableName FROM ChatRoomCatalogue;");
         query.exec();
-        while (query.m_query.next())
+        while (query.next())
         {
             QString chatRoomTableName = query.value(2).toString();
+
             Query query2(m_db);
-            query2.prepare("SELECT userId FROM " + chatRoomTableName.toStdString() + "_members WHERE userId = " + std::to_string(userId) + ";");
+            query2.prepare("SELECT userId FROM :chatRoomTableName_members WHERE userId = :userID;");
+            query2.bindValue(":chatRoomTableName_members", chatRoomTableName.toStdString() + "_members");
+            query2.bindValue(":userId", userId);
             query2.exec();
-            while (query2.m_query.next())
+            while (query2.next())
             {
                 chatRooms.push_back(chatRoomTableName.toStdString());
             }
