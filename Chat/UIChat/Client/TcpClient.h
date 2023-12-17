@@ -27,7 +27,7 @@ public:
         qCritical() << "!!!! ~Client(): ";
     }
 
-    void connect(std::string addr, int port)
+    void connect(const std::string& addr, const int& port)
     {
         qDebug() << "Connect: " << addr << ' ' << port;
         auto endpoint = tcp::endpoint(ip::address::from_string( addr.c_str()), port);
@@ -72,15 +72,15 @@ public:
                            qCritical() <<  "!!!! Session::readMessage error (0): " << ec.message();
                            return;
                        }
-                       qDebug() << "Async_read: " << header->m_length << ' ' << header->m_type;
-                       if (header->m_length == 0)
+                       qDebug() << "Async_read: " << header->length() << ' ' << header->type();
+                       if (header->length() == 0)
                        {
                            qCritical() <<  "!!!! Length = 0";
                            return;
                        }
-                       auto readBuffer = std::make_shared<std::vector<uint8_t >>(header->m_length, 0);
+                       auto readBuffer = std::make_shared<std::vector<uint8_t >>(header->length(), 0);
 
-                       async_read( m_socket, buffer(*readBuffer), transfer_exactly(header->m_length),
+                       async_read( m_socket, buffer(*readBuffer), transfer_exactly(header->length()),
                                    [this, readBuffer, header = *header.get()]
                                            ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
                                    {
@@ -89,11 +89,11 @@ public:
                                            qCritical() << "!!!! Session::readMessage error (1): " << ec.message();
                                            return;
                                        }
-                                       if (bytes_transferred != header.m_length)
+                                       if (bytes_transferred != header.length())
                                        {
                                            qCritical() << "!!! Bytes transferred doesn't equal length";
                                        }
-                                       m_client->onPacketReceived(header.m_type, &(*readBuffer)[0], header.m_length);
+                                       m_client->onPacketReceived(header.type(), &(*readBuffer)[0], header.length());
                                        readPacket();
                                    });
                    });

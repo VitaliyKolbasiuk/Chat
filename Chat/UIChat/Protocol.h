@@ -24,8 +24,30 @@ struct Seed{
 };
 
 struct PacketHeaderBase{
+protected:
     uint32_t m_type;
     uint32_t m_length;
+
+public:
+    uint32_t type() const
+    {
+        return m_type;
+    }
+
+    void setType(uint32_t type)
+    {
+        m_type = type;
+    }
+
+    uint32_t length() const
+    {
+        return m_length;
+    }
+
+    void setLength(uint32_t length)
+    {
+        m_length = length;
+    }
 };
 
 template<typename T>
@@ -75,16 +97,27 @@ struct HandshakeResponse{
 struct ChatRoomListPacket{
     enum { type = 4};
 
-    ~ChatRoomListPacket()
+    void operator delete(void *ptr)
     {
-        delete[] reinterpret_cast<uint8_t*>(this);
+        delete[] reinterpret_cast<uint8_t*>(ptr);
     }
 
     uint16_t length()
     {
-        return reinterpret_cast<PacketHeaderBase*>(this)->m_length;
+        return reinterpret_cast<PacketHeaderBase*>(this)->length();
+    }
+
+    uint16_t packetType()
+    {
+        return reinterpret_cast<PacketHeaderBase*>(this)->type();
     }
 };
+
+inline std::vector<std::string> parseChatRoomList(const uint8_t* buffer)
+{
+    // TODO
+    return {};
+}
 
 inline ChatRoomListPacket* createChatRoomList(const std::vector<std::string>& chatRoomList)
 {
@@ -93,11 +126,12 @@ inline ChatRoomListPacket* createChatRoomList(const std::vector<std::string>& ch
     {
         bufferSize += chatRoom.size() + 2 + 1;  // length of string + zero-end
     }
+
     uint8_t* buffer = new uint8_t[bufferSize];
 
     PacketHeaderBase* header = reinterpret_cast<PacketHeaderBase*>(buffer);
-    header->m_type = ChatRoomListPacket::type;
-    header->m_length = (uint32_t)bufferSize;
+    header->setType(ChatRoomListPacket::type);
+    header->setLength((uint32_t)bufferSize);
     if (bufferSize > 0)
     {
         uint8_t* ptr = buffer + sizeof(PacketHeaderBase);

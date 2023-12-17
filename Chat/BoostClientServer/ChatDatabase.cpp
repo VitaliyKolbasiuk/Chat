@@ -209,8 +209,7 @@ public:
             QString chatRoomTableName = query.value(2).toString();
 
             Query query2(m_db);
-            query2.prepare("SELECT userId FROM :chatRoomTableName_members WHERE userId = :userID;");
-            query2.bindValue(":chatRoomTableName_members", chatRoomTableName.toStdString() + "_members");
+            query2.prepare("SELECT userId FROM " + chatRoomTableName.toStdString() + "_members WHERE userId = :userId;");
             query2.bindValue(":userId", userId);
             query2.exec();
             while (query2.next())
