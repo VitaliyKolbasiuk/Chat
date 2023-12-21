@@ -60,7 +60,6 @@ void MainWindow::init()
 
     //qDebug() << QDir::homePath();
     //system("dir");
-    m_chatClient->saveClientInfo(m_settings->m_username, "");
     ui->TextUsername->setText(QString::fromStdString(m_settings->m_username));
 
     m_tcpClient = std::make_shared<TcpClient>(m_ioContext1, m_chatClient);
@@ -108,13 +107,17 @@ void MainWindow::configureUI()
     ui->UserMessage->setVisible(false);
 }
 
+void MainWindow::onChatRoomListReceived()
+{
+
+}
+
 void MainWindow::on_Join_released()
 {
     QString chatRoomName = ui->TextChatRoomName->text();
     QString username = ui->TextUsername->text();
     if (!chatRoomName.isEmpty() && !username.isEmpty())
     {
-        m_chatClient->saveClientInfo(username.toStdString(), chatRoomName.toStdString());
         m_chatClient->sendUserMessage(JOIN_TO_CHAT_CMD ";");
         ui->TextChatRoomName->setVisible(false);
         ui->TextUsername->setVisible(false);

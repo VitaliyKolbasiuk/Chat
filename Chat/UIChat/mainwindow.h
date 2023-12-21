@@ -33,6 +33,8 @@ private slots:
 
     void on_m_CreateRoom_released();
 
+    void onChatRoomListReceived();
+
 private:
     Ui::MainWindow *ui;
 

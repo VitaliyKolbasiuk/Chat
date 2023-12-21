@@ -28,7 +28,7 @@ signals:
 private:
     std::weak_ptr<TcpClient>  m_tcpClient;
     std::string m_chatClientName;
-    std::string m_chatRoomName;
+    ChatRoomInfoList m_chatRoomInfoList;
     Settings& m_settings;
 
 private:
@@ -43,12 +43,6 @@ public:
     void setTcpClient(const std::weak_ptr<TcpClient>& tcpClient)
     {
         m_tcpClient = tcpClient;
-    }
-
-    virtual void saveClientInfo(const std::string& chatClientName, const std::string& chatRoomName) override
-    {
-        m_chatClientName = chatClientName;
-        m_chatRoomName = chatRoomName;
     }
 
     virtual void onSocketConnected() override
@@ -79,15 +73,27 @@ public:
 
     virtual void onPacketReceived ( uint16_t packetType, uint8_t* packet, uint16_t packetSize) override
     {
+        qDebug() << "Received packet type: " << packetType;
         switch(packetType)
         {
             case HandshakeRequest::type:
+            {
                 qDebug() << "Handshake received";
                 HandshakeRequest request;
                 assert(packetSize == sizeof(request));
                 std::memcpy(&request, packet, packetSize);
                 onHandshake(request);
                 break;
+            }
+            case ChatRoomListPacket::type:
+            {
+                qDebug() << "ChatRoomListPacket received";
+                ChatRoomInfoList chatRoomList = parseChatRoomList(packet, packetSize - sizeof(PacketHeaderBase));
+                m_chatRoomInfoList = chatRoomList;
+                // UPDATE ChatRoomList
+
+                break;
+            }
         }
     }
 
@@ -148,7 +154,7 @@ public:
     {
         std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
         std::ostream os(&(*wrStreambuf));
-        os << message + m_chatRoomName + ";" + m_chatClientName + ";\n";
+        //os << message + m_chatRoomName + ";" + m_chatClientName + ";\n";
         if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
         {
             //tcpClient->sendMessageToServer(wrStreambuf);

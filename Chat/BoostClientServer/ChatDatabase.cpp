@@ -179,12 +179,13 @@ public:
             if(query.next())
             {
                 int userId = query.value(0).toInt();
-                std::vector<std::string> chatRoomList = getChatRoomList(userId);
+                ChatRoomInfoList chatRoomList = getChatRoomList(userId);
 
                 boost::asio::post(gServerIoContext, [=, this]() mutable
                 {
                     if (const auto &sessionPtr = session.lock(); sessionPtr)
                     {
+                        qDebug() << "ChatRoomListPacket has been sent";
                         ChatRoomListPacket *packet = createChatRoomList(chatRoomList);
                         sessionPtr->sendBufferedPacket<ChatRoomListPacket>(packet);
                     }
@@ -197,15 +198,17 @@ public:
         }
     }
 
-    std::vector<std::string> getChatRoomList(const int& userId) override
+    ChatRoomInfoList getChatRoomList(const int& userId) override
     {
-        std::vector<std::string> chatRooms;
+        ChatRoomInfoList chatRooms;
 
         Query query(m_db);
         query.prepare("SELECT chatRoomId, chatRoomName, chatRoomTableName FROM ChatRoomCatalogue;");
         query.exec();
         while (query.next())
         {
+            uint32_t chatRoomId = query.value(0).toUInt();
+            QString chatRoomName = query.value(1).toString();
             QString chatRoomTableName = query.value(2).toString();
 
             Query query2(m_db);
@@ -214,7 +217,7 @@ public:
             query2.exec();
             while (query2.next())
             {
-                chatRooms.push_back(chatRoomTableName.toStdString());
+                chatRooms.emplace_back(chatRoomId, chatRoomName.toStdString());
             }
         }
         return chatRooms;

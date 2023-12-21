@@ -104,7 +104,7 @@ struct ChatRoomListPacket{
 
     uint16_t length()
     {
-        return reinterpret_cast<PacketHeaderBase*>(this)->length();
+        return reinterpret_cast<PacketHeaderBase*>(this)->length() + sizeof(PacketHeaderBase);
     }
 
     uint16_t packetType()
@@ -113,23 +113,68 @@ struct ChatRoomListPacket{
     }
 };
 
-inline std::vector<std::string> parseChatRoomList(const uint8_t* buffer)
+inline ChatRoomInfoList parseChatRoomList(const uint8_t* buffer, size_t bufferSize)
 {
-    // TODO
-    return {};
+    ChatRoomInfoList chatRoomList;
+    const uint8_t* bufferEnd = buffer + bufferSize;
+    const uint8_t* ptr = buffer;
+    while (ptr < bufferEnd)
+    {
+        uint32_t id;
+        if (bufferEnd - ptr >= sizeof(id))
+        {
+            std::memcpy(&id, ptr, sizeof(id));
+            ptr += sizeof(id);
+        }
+        else
+        {
+            qWarning() << "Invalid chatRoomListPacket (id)";
+            return {};
+        }
+
+        uint16_t length;
+        if (bufferEnd - ptr >= sizeof(length))
+        {
+            std::memcpy(&length, ptr, sizeof(length));
+            ptr += sizeof(length);
+        }
+        else
+        {
+            qWarning() << "Invalid chatRoomListPacket (length)";
+            return {};
+        }
+        if (length == 0)
+        {
+            qWarning() << "Invalid chatRoomListPacket(length = 0)";
+            return {};
+        }
+        std::string chatRoomName(length - 1, ' ');
+        if (bufferEnd - ptr >= length)
+        {
+            std::memcpy(&chatRoomName[0], ptr, length);
+            ptr += length;
+        }
+        else
+        {
+            qWarning() << "Invalid chatRoomListPacket (name)";
+            return {};
+        }
+        chatRoomList.emplace_back(id, chatRoomName);
+    }
+    return chatRoomList;
 }
 
-inline ChatRoomListPacket* createChatRoomList(const std::vector<std::string>& chatRoomList)
+inline ChatRoomListPacket* createChatRoomList(const ChatRoomInfoList& chatRoomList)
 {
     size_t bufferSize = sizeof(PacketHeaderBase);
     for(const auto& chatRoom : chatRoomList)
     {
-        bufferSize += chatRoom.size() + 2 + 1;  // length of string + zero-end
+        bufferSize += chatRoom.m_chatRoomName.size() + 2 + 4 + 1;  // length of string + zero-end
     }
 
-    uint8_t* buffer = new uint8_t[bufferSize];
+    auto* buffer = new uint8_t[bufferSize];
 
-    PacketHeaderBase* header = reinterpret_cast<PacketHeaderBase*>(buffer);
+    auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
     header->setType(ChatRoomListPacket::type);
     header->setLength((uint32_t)bufferSize);
     if (bufferSize > 0)
@@ -137,10 +182,15 @@ inline ChatRoomListPacket* createChatRoomList(const std::vector<std::string>& ch
         uint8_t* ptr = buffer + sizeof(PacketHeaderBase);
         for(const auto& chatRoom : chatRoomList)
         {
-            uint16_t length = chatRoom.size() + 1;
+            std::memcpy(ptr, &chatRoom.m_chatRoomId, sizeof(chatRoom.m_chatRoomId));
+            ptr += sizeof(chatRoom.m_chatRoomId);
+
+            uint16_t length = chatRoom.m_chatRoomName.size() + 1;
             std::memcpy(ptr, &length, sizeof(length));
             ptr += sizeof(length);
-            std::memcpy(ptr, chatRoom.c_str(), length);
+
+            std::memcpy(ptr, chatRoom.m_chatRoomName.c_str(), length);
+            ptr += length;
         }
     }
     return reinterpret_cast<ChatRoomListPacket*>(buffer);
