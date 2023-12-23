@@ -196,3 +196,11 @@ inline ChatRoomListPacket* createChatRoomList(const ChatRoomInfoList& chatRoomLi
     return reinterpret_cast<ChatRoomListPacket*>(buffer);
 }
 
+struct RequestMessagesPacket{
+    enum { type = 5 };
+    ChatRoomId  m_chatRoomId;
+    int         m_messageNumber;
+    MessageId   m_messageId = std::numeric_limits<typeof(MessageId::m_id)>::max();
+};
+
+

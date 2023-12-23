@@ -5,6 +5,7 @@
 #include <string>
 #include <boost/tokenizer.hpp>
 #include <QObject>
+#include <ctime>
 
 #include "ClientInterfaces.h"
 #include "TcpClient.h"
@@ -13,6 +14,23 @@
 #include "Settings.h"
 #include "ed25519/src/ed25519.h"
 
+
+struct ModelChatRoomInfo{
+    ChatRoomId          m_id;
+    std::string m_name;
+    int         m_position = 0;
+    int         m_offset = 0;
+
+    struct Record{
+        std::time_t  m_time;
+        UserId       m_userId;
+        std::string  m_username;
+        std::string  m_text;
+    };
+    std::vector<Record> m_records;
+};
+
+using ModelChatRoomList = std::map<ChatRoomId, ModelChatRoomInfo>;
 
 class QChatClient : public QObject, public IChatClient
 {
@@ -23,12 +41,12 @@ public:
 signals:
     void OnMessageReceived(QString username, QString message);
 
-    void OnTableChanged(QString username);
+    void OnTableChanged(const ModelChatRoomList& chatRoomInfoList);
 
 private:
     std::weak_ptr<TcpClient>  m_tcpClient;
     std::string m_chatClientName;
-    ChatRoomInfoList m_chatRoomInfoList;
+    ModelChatRoomList m_chatRoomInfoList;
     Settings& m_settings;
 
 private:
@@ -79,7 +97,7 @@ public:
             case HandshakeRequest::type:
             {
                 qDebug() << "Handshake received";
-                HandshakeRequest request;
+                HandshakeRequest request{};
                 assert(packetSize == sizeof(request));
                 std::memcpy(&request, packet, packetSize);
                 onHandshake(request);
@@ -89,8 +107,26 @@ public:
             {
                 qDebug() << "ChatRoomListPacket received";
                 ChatRoomInfoList chatRoomList = parseChatRoomList(packet, packetSize - sizeof(PacketHeaderBase));
-                m_chatRoomInfoList = chatRoomList;
+
+                for (const auto& chatRoomInfo : chatRoomList)
+                {
+                    m_chatRoomInfoList[chatRoomInfo.m_chatRoomId] = ModelChatRoomInfo{chatRoomInfo.m_chatRoomId, chatRoomInfo.m_chatRoomName};
+                }
+
                 // UPDATE ChatRoomList
+                emit OnTableChanged(m_chatRoomInfoList);
+
+                for (const auto& [key, chatRoomInfo] : m_chatRoomInfoList)
+                {
+                    PacketHeader<RequestMessagesPacket> request;
+                    request.m_packet.m_chatRoomId = chatRoomInfo.m_id;
+                    request.m_packet.m_messageNumber = 100;
+                    if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
+                    {
+                        qDebug() << "Request chat room messages: " << chatRoomInfo.m_id.m_id;
+                        tcpClient->sendPacket(request);
+                    }
+                }
 
                 break;
             }
@@ -147,7 +183,7 @@ public:
         {
             std::string username;
             std::getline(input, username, ';');
-            emit OnTableChanged(QString::fromStdString(username));
+            //emit OnTableChanged(QString::fromStdString(username));
         }
     }
     virtual bool sendUserMessage(const std::string& message) override

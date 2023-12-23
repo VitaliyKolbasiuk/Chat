@@ -6,9 +6,34 @@
 #include <cereal/types/array.hpp>
 #include <QDebug>
 
-using Key = std::array<uint8_t, 32>;
+using Key        = std::array<uint8_t, 32>;
 using PrivateKey = std::array<uint8_t, 64>;
-using Sign = std::array<uint8_t, 64>;
+using Sign       = std::array<uint8_t, 64>;
+
+struct ChatRoomId {
+    uint32_t m_id;
+
+    ChatRoomId() = default;
+    constexpr ChatRoomId(uint32_t id) : m_id(id){}
+    bool operator< (const ChatRoomId& chatRoomId) const
+    {
+        return m_id < chatRoomId.m_id;
+    }
+};
+
+struct UserId{
+    uint32_t m_id;
+
+    UserId() = default;
+    constexpr UserId (uint32_t id) : m_id(id){}
+};
+
+struct MessageId{
+    uint32_t m_id;
+
+    MessageId() = default;
+    constexpr MessageId (uint32_t id) : m_id(id){}
+};
 
 struct ChatRoomInfo{
     uint32_t    m_chatRoomId;

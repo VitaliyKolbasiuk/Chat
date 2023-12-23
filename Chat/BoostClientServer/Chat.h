@@ -7,6 +7,7 @@
 //#include "Protocol.h"
 //#include "Utils.h"
 #include "ServerSession.h"
+#include "Types.h"
 
 class ChatRoom;
 
@@ -76,22 +77,11 @@ public:
 class Chat: public IChat
 {
     std::map<Key, std::shared_ptr<UserInfo>> m_users;
-    std::map<std::string, ChatRoom> m_chatRooms;
+    std::map<ChatRoomId, ChatRoom> m_chatRooms;
     IChatDatabase& m_database;
 
 public:
     Chat(IChatDatabase& database) : m_database(database) {}
-
-    void updateTable(const std::string &chatRoomName, const std::string &username)
-    {
-        std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
-        std::ostream os(&(*wrStreambuf));
-        for (const auto &user : m_chatRooms[chatRoomName].clients())
-        {
-            os << UPDATE_THE_USER_TABLE_CMD";" + username + ";\n";
-            //user.second.m_session->sendMessage(wrStreambuf);
-        }
-    }
 
     virtual void onPacketReceived(uint16_t packetType, const uint8_t* readBuffer, uint16_t packetSize, std::weak_ptr<ServerSession> session) override
     {
@@ -120,7 +110,6 @@ public:
                 generateRandomKey(it->second->m_connections.back().m_handshakeRequest.m_packet.m_random);
                 if (const auto& sessionPtr = session.lock(); sessionPtr)
                 {
-                    qDebug() << "Send packet";
                     sessionPtr->sendPacket(it->second->m_connections.back().m_handshakeRequest);
                 }
                 else{
@@ -190,6 +179,16 @@ public:
                 {
                     sessionPtr->readPacket();
                 }
+                break;
+            }
+            case RequestMessagesPacket::type:
+            {
+                const RequestMessagesPacket& request = *(reinterpret_cast<const RequestMessagesPacket*>(readBuffer));
+                qDebug() << "Request messages packet received: " << request.m_chatRoomId.m_id;
+                boost::asio::post( gDatabaseIoContext, [=, this]() mutable
+                {
+                    //m_database.onUserConnected();
+                } );
                 break;
             }
         }
