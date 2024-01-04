@@ -28,7 +28,6 @@ void CreateChatRoom::on_buttonBox_accepted()
         return;
     }
 
-    //std::string message = CREATE_CHAT_ROOM_CMD ";" + ui->m_chatRoomName->text().toStdString() + ";" + ((ui->m_privateCBox->checkState() == Qt::Unchecked) ? "0" : "1") + ";" + ;
-    //m_chatClient->sendUserMessage(message);
+    m_chatClient.createChatRoom(ui->m_chatRoomName->text().trimmed().toStdString(), ui->m_privateCBox->isChecked());
 }
 

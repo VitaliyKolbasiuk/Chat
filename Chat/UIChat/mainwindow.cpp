@@ -116,7 +116,7 @@ void MainWindow::on_Join_released()
     QString username = ui->TextUsername->text();
     if (!chatRoomName.isEmpty() && !username.isEmpty())
     {
-        m_chatClient->sendUserMessage(JOIN_TO_CHAT_CMD ";");
+        //m_chatClient->sendUserMessage(JOIN_TO_CHAT_CMD ";");
         ui->TextChatRoomName->setVisible(false);
         ui->TextUsername->setVisible(false);
         ui->Join->setVisible(false);
@@ -143,8 +143,8 @@ void MainWindow::on_SendMessage_released()
     QString userMessage = ui->UserMessage->text();
     if (!userMessage.isEmpty())
     {
-        std::string message = MESSAGE_TO_ALL_CMD ";" + userMessage.toStdString() + ";";
-        m_chatClient->sendUserMessage(message);
+        //std::string message = MESSAGE_TO_ALL_CMD ";" + userMessage.toStdString() + ";";
+        //m_chatClient->sendUserMessage(message);
         ui->UserMessage->clear();
     }
 }

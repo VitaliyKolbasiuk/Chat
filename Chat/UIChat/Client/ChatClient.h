@@ -121,9 +121,10 @@ public:
                     PacketHeader<RequestMessagesPacket> request;
                     request.m_packet.m_chatRoomId = chatRoomInfo.m_id;
                     request.m_packet.m_messageNumber = 100;
+                    qDebug() << "RequestMessagesPacket: Chat room ID: " << request.m_packet.m_chatRoomId.m_id << ' ' << chatRoomInfo.m_id.m_id;
+                    qDebug() << "RequestMessagesPacket: Chat room message number: " << request.m_packet.m_messageNumber;
                     if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
                     {
-                        qDebug() << "Request chat room messages: " << chatRoomInfo.m_id.m_id;
                         tcpClient->sendPacket(request);
                     }
                 }
@@ -145,66 +146,32 @@ public:
 
         if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
         {
-            qDebug() << "Handshake response has been sent";
             tcpClient->sendPacket(response);
         }
     }
 
-
-
-    virtual void handleServerMessage(const std::string& command, boost::asio::streambuf& message) override
+    bool createChatRoom(std::string name, bool isPrivate)
     {
-        if ( message.size() <= 0 )
-        {
-            return;
-        }
-
-        std::istringstream input;
-        input.str(std::string((const char*)message.data().data(), message.size()));
-
-        if (command == MESSAGE_FROM_CMD)
-        {
-            std::string username;
-            std::string message;
-
-            std::getline(input, message, ';');
-            std::getline(input, username, ';');
-
-            if (username != m_chatClientName)
-            {
-                emit OnMessageReceived(QString::fromStdString("<HTML> <font color=\"yellow\">" + username + " </font>" ), QString::fromStdString(message));
-            }
-            else
-            {
-                emit OnMessageReceived(QString::fromStdString("<HTML> <font color=\"green\">" + username + ": </font>"), QString::fromStdString(message));
-            }
-        }
-        else if (command == UPDATE_THE_USER_TABLE_CMD)
-        {
-            std::string username;
-            std::getline(input, username, ';');
-            //emit OnTableChanged(QString::fromStdString(username));
-        }
-    }
-    virtual bool sendUserMessage(const std::string& message) override
-    {
-        std::shared_ptr<boost::asio::streambuf> wrStreambuf = std::make_shared<boost::asio::streambuf>();
-        std::ostream os(&(*wrStreambuf));
-        //os << message + m_chatRoomName + ";" + m_chatClientName + ";\n";
-        if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
-        {
-            //tcpClient->sendMessageToServer(wrStreambuf);
-            return true;
-        }
-        else
+        PacketHeader<CreateChatRoomPacket> packet;
+        if (name.size() + 1> sizeof(packet.m_packet.m_name))
         {
             return false;
         }
+        std::memcpy(packet.m_packet.m_name, &name[0], name.size() + 1);
+        packet.m_packet.m_private = isPrivate;
+        packet.m_packet.m_publicKey = m_settings.m_keyPair.m_publicKey;
+        packet.m_packet.sign(m_settings.m_keyPair.m_privateKey);
+
+        if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
+        {
+            tcpClient->sendPacket(packet);
+        }
+        return true;
     }
+
 
     virtual void closeConnection() override
     {
-        sendUserMessage(EXIT_THE_CHAT_CMD ";");
         exit(1);
     }
 };

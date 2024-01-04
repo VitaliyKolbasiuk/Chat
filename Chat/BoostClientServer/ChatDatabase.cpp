@@ -48,7 +48,10 @@ struct Query{
     {
         if (!m_query.next())
         {
-            qCritical() << "next query ERROR: " << m_query.lastError().text();
+            if (!m_query.lastError().text().isEmpty())
+            {
+                qCritical() << "next query ERROR: " << m_query.lastError().text();
+            }
             return false;
         }
         return true;
@@ -86,13 +89,12 @@ public:
     // TODO unread messages in db
 
 
-    void createChatRoomTable(const std::string& chatRoomTableName)
+    void createChatRoomTable(const std::string& chatRoomTableName, bool isPrivate, Key ownerPublicKey)
     {
         Query query(m_db);
         query.prepare("CREATE TABLE IF NOT EXISTS " + chatRoomTableName + "_members "
                                                                      "("
-                                                                         "senderId INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                                                         "userId INT, "
+                                                                         "userId INT UNIQUE, "
                                                                          "FOREIGN KEY (userId) REFERENCES UserCatalogue(userId)"
                                                                      ");");
         query.exec();
@@ -107,7 +109,10 @@ public:
                                                                      ");");
         query.exec();
 
-        query.prepare("INSERT INTO ChatRoomCatalogue (chatRoomTableName) VALUES ('" + chatRoomTableName + "');");
+        query.prepare("INSERT INTO ChatRoomCatalogue (chatRoomTableName, isPrivate, ownerPublicKey) "
+                      "VALUES ('" + chatRoomTableName + "', "
+                      "" + std::to_string(isPrivate ? 1 : 0) + ","
+                      + toString(ownerPublicKey) + ");");
         query.exec();
     }
 
@@ -234,7 +239,7 @@ public:
 //        }
         createChatRoomCatalogue();
         //getUserId({});
-//        createChatRoomTable("Room1");
+        //createChatRoomTable("Room1");
 //        createChatRoomTable("Room2");
 //        query.m_query.next();
 //        qDebug() << query.value(0).toString();

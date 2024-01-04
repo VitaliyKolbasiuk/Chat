@@ -12,8 +12,6 @@
 #include "ed25519/src/ed25519.h"
 
 
-
-
 struct Seed{
     std::array<uint8_t, 64> m_data;
     template <class Archive>
@@ -64,38 +62,42 @@ static_assert(sizeof(PacketHeaderBase) + sizeof(uint64_t) == sizeof(PacketHeader
 
 // MESSAGE TO SERVER
 struct ConnectRequest{
-    enum { type = 1 };
+    enum { type = 100 };
     Key         m_publicKey;
     char        m_nickname[64];
     Key         m_deviceKey;
 };
 
+
 // MESSAGE TO CLIENT
 struct HandshakeRequest{
-    enum { type = 2 };
+    enum { type = 1 };
     std::array<uint8_t, 64> m_random;
 };
 
 // MESSAGE TO SERVER
 struct HandshakeResponse{
-    enum { type = 3 };
+    enum { type = 101 };
     Key                     m_publicKey;
     char                    m_nickname[64];
     Key                     m_deviceKey;
     std::array<uint8_t, 64> m_random;
     Sign                    m_sign;
 
-    void sign(const PrivateKey& privateKey){
+    void sign(const PrivateKey& privateKey)
+    {
         ed25519_sign(&m_sign[0], &m_publicKey[0], sizeof(m_random) + sizeof(m_nickname) + sizeof(m_deviceKey) + sizeof(m_publicKey), &m_publicKey[0], &privateKey[0]);
     }
 
-    bool verify() const {
+    bool verify() const
+    {
         return ed25519_verify(&m_sign[0], &m_publicKey[0], sizeof(m_random) + sizeof(m_nickname) + sizeof(m_deviceKey) + sizeof(m_publicKey), &m_publicKey[0]);
     }
 };
 
+// MESSAGE TO CLIENT
 struct ChatRoomListPacket{
-    enum { type = 4};
+    enum { type = 2};
 
     void operator delete(void *ptr)
     {
@@ -196,11 +198,51 @@ inline ChatRoomListPacket* createChatRoomList(const ChatRoomInfoList& chatRoomLi
     return reinterpret_cast<ChatRoomListPacket*>(buffer);
 }
 
+struct ChatRoomUpdatePacket{
+    enum { type = 3 };
+    ChatRoomId m_chatRoomId;
+    char m_chatRoomName[64];
+    bool m_addOrDelete;      // ADD - true, DELETE - false
+};
+
+// MESSAGE TO SERVER
 struct RequestMessagesPacket{
-    enum { type = 5 };
+    enum { type = 103 };
     ChatRoomId  m_chatRoomId;
     int         m_messageNumber;
     MessageId   m_messageId = std::numeric_limits<typeof(MessageId::m_id)>::max();
 };
 
+struct CreateChatRoomPacket{
+    enum { type = 104};
+    char m_name[64];
+    bool m_private;
+    Key  m_publicKey;
+    Sign m_sign;
+
+    void sign(const PrivateKey& privateKey)
+    {
+        ed25519_sign(&m_sign[0], &m_publicKey[0], sizeof(m_name) + sizeof(m_private) + sizeof(m_publicKey), &m_publicKey[0], &privateKey[0]);
+    }
+
+    bool verify() const
+    {
+        return ed25519_verify(&m_sign[0], &m_publicKey[0], sizeof(m_name) + sizeof(m_private) + sizeof(m_publicKey), &m_publicKey[0]);
+    }
+};
+
+struct TypeMap{
+    std::map<int, std::string> m_typeMap;
+    TypeMap(){
+        m_typeMap[ConnectRequest::type] = "<ConnectRequest>";
+        m_typeMap[HandshakeRequest::type] = "<HandshakeRequest>";
+        m_typeMap[HandshakeResponse::type] = "<HandshakeResponse>";
+        m_typeMap[ChatRoomListPacket::type] = "<ChatRoomListPacket>";
+        m_typeMap[RequestMessagesPacket::type] = "<RequestMessagesPacket>";
+        m_typeMap[CreateChatRoomPacket::type] = "<CreateChatRoomPacket>";
+        m_typeMap[ChatRoomUpdatePacket::type] = "<ChatRoomUpdatePacket>";
+    }
+};
+
+inline TypeMap gTypeMap;
 

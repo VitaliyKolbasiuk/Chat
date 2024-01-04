@@ -32,7 +32,7 @@ public:
     template<typename T>
     void sendPacket(PacketHeader<T>& packet)
     {
-        qDebug() << "Send packet: " << packet.type();
+        qDebug() << "Send packet type: " << gTypeMap.m_typeMap[packet.type()];
         async_write(m_socket, boost::asio::buffer(&packet, sizeof(PacketHeader<T>)),
                     [this] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                         if ( ec )
@@ -69,7 +69,7 @@ public:
                            qCritical() <<  "!!!! Session::readMessage error (0): " << ec.message();
                            return;
                        }
-                       qDebug() << "Async_read: " << header->length() << ' ' << header->type();
+                       qDebug() << "Async_read packet length : " << header->length() << " Packet type: "<< gTypeMap.m_typeMap[header->type()];
                        if (header->length() == 0)
                        {
                            qCritical()<<  "!!!! Length = 0";

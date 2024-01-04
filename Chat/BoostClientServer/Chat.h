@@ -90,7 +90,7 @@ public:
         {
             case ConnectRequest::type:
             {
-                qDebug() << "Connect request received";
+                qDebug() << "<ConnectRequest> received";
                 const ConnectRequest& request = *(reinterpret_cast<const ConnectRequest*>(readBuffer));
 
                 //  Looking if user had any previous connection
@@ -119,6 +119,7 @@ public:
             }
             case HandshakeResponse::type:
             {
+                qDebug() << "<HandshakeResponse> received";
                 const HandshakeResponse& response = *(reinterpret_cast<const HandshakeResponse*>(readBuffer));
                 if (!response.verify())
                 {
@@ -175,20 +176,38 @@ public:
                     m_database.onUserConnected(response.m_publicKey, response.m_deviceKey, response.m_nickname, session);
                 } );
 
-                if (const auto& sessionPtr = session.lock(); sessionPtr)
-                {
-                    sessionPtr->readPacket();
-                }
+//                if (const auto& sessionPtr = session.lock(); sessionPtr)
+//                {
+//                    sessionPtr->readPacket();
+//                }
                 break;
             }
             case RequestMessagesPacket::type:
             {
+                qDebug() << "<RequestMessagesPacket> received";
                 const RequestMessagesPacket& request = *(reinterpret_cast<const RequestMessagesPacket*>(readBuffer));
                 qDebug() << "Request messages packet received: " << request.m_chatRoomId.m_id;
                 boost::asio::post( gDatabaseIoContext, [=, this]() mutable
                 {
                     //m_database.onUserConnected();
                 } );
+                break;
+            }
+            case CreateChatRoomPacket::type:
+            {
+                qDebug() << "<CreateChatRoomPacket> received";
+                const CreateChatRoomPacket& packet = *(reinterpret_cast<const CreateChatRoomPacket*>(readBuffer));
+                if (!packet.verify())
+                {
+                    qCritical() << "Bad packet sign";
+                    break;
+                }
+
+//                boost::asio::post( gDatabaseIoContext, [=, this]() mutable
+//                {
+//                    m_database.createChatRoomTable();
+//                } );
+
                 break;
             }
         }

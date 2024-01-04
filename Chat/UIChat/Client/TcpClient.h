@@ -49,16 +49,22 @@ public:
     template<typename T>
     void sendPacket(PacketHeader<T>& buffer)
     {
+        qDebug() << "Send Packet buffer length: " << buffer.length() << " Type: " << gTypeMap.m_typeMap[buffer.type()];
+        if (buffer.type() == 5)
+        {
+            qDebug() << "Packet type 5";
+        }
         async_write(m_socket, boost::asio::buffer(&buffer, sizeof(PacketHeader<T>)),
-                            [this] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
-            qDebug() << "Async_write bytes transferred: " << bytes_transferred;
-            if ( ec )
-            {
-                qCritical() << "!!!! Session::sendMessage error (1): " << ec.message();
-                exit(-1);
-            }
-        });
+                    [this] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
+                        qDebug() << "Async_write bytes transferred: " << bytes_transferred;
+                        if ( ec )
+                        {
+                            qCritical() << "!!!! Session::sendMessage error (1): " << ec.message();
+                            exit(-1);
+                        }
+                    });
     }
+
 
     void readPacket()
     {
@@ -72,7 +78,7 @@ public:
                            qCritical() <<  "!!!! Session::readMessage error (0): " << ec.message();
                            return;
                        }
-                       qDebug() << "Async_read: " << header->length() << ' ' << header->type();
+                       qDebug() << "Async_read header length: " << header->length() << " Header type: " << gTypeMap.m_typeMap[header->type()];
                        if (header->length() == 0)
                        {
                            qCritical() <<  "!!!! Length = 0";
@@ -98,36 +104,5 @@ public:
                                    });
                    });
 
-    }
-
-
-
-    void readResponse()
-    {
-        // Receive the response from the server
-        std::shared_ptr<boost::asio::streambuf> streambuf = std::make_shared<boost::asio::streambuf>();
-
-        boost::asio::async_read_until( m_socket, *streambuf, '\n', [streambuf,this]( const boost::system::error_code& error_code, std::size_t bytes_transferred )
-        {
-            if ( error_code )
-            {
-                qCritical()<< "Client read error: " << error_code.message();
-            }
-            else
-            {
-                {
-                    std::istream response( &(*streambuf) );
-
-                    std::string command;
-                    std::getline( response, command, ';' );
-
-                    m_client->handleServerMessage( command, *streambuf );
-
-                }
-
-                streambuf->consume(bytes_transferred);
-                readResponse();
-            }
-        });
     }
 };
