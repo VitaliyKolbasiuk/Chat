@@ -30,3 +30,14 @@ std::string arrayToHexString(const std::array<uint8_t, N>& arr)
     return ss.str();
 }
 
+inline uint64_t currentUtc()
+{
+    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+
+    auto utcTime = std::chrono::time_point_cast<std::chrono::seconds>(now);
+
+    auto seconds_since_epoch = std::chrono::duration_cast<std::chrono::seconds>(utcTime.time_since_epoch());
+
+    return seconds_since_epoch.count();
+}
+

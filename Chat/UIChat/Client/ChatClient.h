@@ -21,6 +21,10 @@ struct ModelChatRoomInfo{
     int         m_position = 0;
     int         m_offset = 0;
 
+    ModelChatRoomInfo() = default;
+    ModelChatRoomInfo(const ModelChatRoomInfo&) = default;
+    ModelChatRoomInfo(const ChatRoomId& id,const std::string& name) : m_id(id), m_name(name) {}
+
     struct Record{
         std::time_t  m_time;
         UserId       m_userId;
@@ -110,7 +114,7 @@ public:
 
                 for (const auto& chatRoomInfo : chatRoomList)
                 {
-                    m_chatRoomInfoList[chatRoomInfo.m_chatRoomId] = ModelChatRoomInfo{chatRoomInfo.m_chatRoomId, chatRoomInfo.m_chatRoomName};
+                    m_chatRoomInfoList[ChatRoomId(chatRoomInfo.m_chatRoomId)] = ModelChatRoomInfo{ChatRoomId(chatRoomInfo.m_chatRoomId), chatRoomInfo.m_chatRoomName};
                 }
 
                 // UPDATE ChatRoomList
@@ -150,15 +154,15 @@ public:
         }
     }
 
-    bool createChatRoom(std::string name, bool isPrivate)
+    bool createChatRoom(const std::string& name, bool isPrivate)
     {
         PacketHeader<CreateChatRoomPacket> packet;
-        if (name.size() + 1> sizeof(packet.m_packet.m_name))
+        if (name.size() + 1 > sizeof(packet.m_packet.m_chatRoomName))
         {
             return false;
         }
-        std::memcpy(packet.m_packet.m_name, &name[0], name.size() + 1);
-        packet.m_packet.m_private = isPrivate;
+        std::memcpy(&packet.m_packet.m_chatRoomName, &name[0], name.size() + 1);
+        packet.m_packet.m_isPrivate = isPrivate;
         packet.m_packet.m_publicKey = m_settings.m_keyPair.m_publicKey;
         packet.m_packet.sign(m_settings.m_keyPair.m_privateKey);
 

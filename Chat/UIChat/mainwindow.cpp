@@ -2,6 +2,7 @@
 #include "./ui_mainwindow.h"
 #include "Client/ClientInterfaces.h"
 #include "Client/ChatClient.h"
+#include "Client/TcpClient.h"
 #include "Settings.h"
 #include "Utils.h"
 #include "CreateChatRoom.h"
@@ -140,9 +141,12 @@ void MainWindow::on_SaveSettings_released()
 
 void MainWindow::on_SendMessage_released()
 {
-    QString userMessage = ui->UserMessage->text();
-    if (!userMessage.isEmpty())
+    std::string userMessage = ui->UserMessage->text().toStdString();
+    if (!userMessage.empty())
     {
+        ChatRoomId chatRoomId((uint64_t)ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toULongLong());
+        auto* packet = createTextMessagePacket(userMessage, chatRoomId);
+        m_tcpClient->sendBufferedPacket<TextMessagePacket>(packet);
         //std::string message = MESSAGE_TO_ALL_CMD ";" + userMessage.toStdString() + ";";
         //m_chatClient->sendUserMessage(message);
         ui->UserMessage->clear();

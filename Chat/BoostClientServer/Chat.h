@@ -203,11 +203,10 @@ public:
                     break;
                 }
 
-//                boost::asio::post( gDatabaseIoContext, [=, this]() mutable
-//                {
-//                    m_database.createChatRoomTable();
-//                } );
-
+                boost::asio::post( gDatabaseIoContext, [=, this]() mutable
+                {
+                    m_database.createChatRoomTable(packet.m_chatRoomName, packet.m_isPrivate, packet.m_publicKey);
+                } );
                 break;
             }
         }

@@ -14,7 +14,14 @@ struct ChatRoomId {
     uint32_t m_id;
 
     ChatRoomId() = default;
-    constexpr ChatRoomId(uint32_t id) : m_id(id){}
+    ChatRoomId(const ChatRoomId&) = default;
+    explicit constexpr ChatRoomId(uint32_t id) : m_id(id){}
+    explicit constexpr ChatRoomId(uint64_t id) : m_id((uint32_t)id){}
+    ChatRoomId& operator= (uint64_t id)
+    {
+        m_id = (uint32_t)id;
+        return *this;
+    }
     bool operator< (const ChatRoomId& chatRoomId) const
     {
         return m_id < chatRoomId.m_id;

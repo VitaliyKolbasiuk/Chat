@@ -89,17 +89,23 @@ public:
     // TODO unread messages in db
 
 
-    void createChatRoomTable(const std::string& chatRoomTableName, bool isPrivate, Key ownerPublicKey)
+    virtual void createChatRoomTable(const std::string& chatRoomName, bool isPrivate, Key ownerPublicKey) override
     {
+        std::array<uint8_t, 20> randomTableName;
+        generateRandomKey(randomTableName);
+
+        std::string tableName = "t_" + toString(randomTableName);
+
+
         Query query(m_db);
-        query.prepare("CREATE TABLE IF NOT EXISTS " + chatRoomTableName + "_members "
+        query.prepare("CREATE TABLE IF NOT EXISTS " + tableName + "_members "
                                                                      "("
                                                                          "userId INT UNIQUE, "
                                                                          "FOREIGN KEY (userId) REFERENCES UserCatalogue(userId)"
                                                                      ");");
         query.exec();
 
-        query.prepare("CREATE TABLE IF NOT EXISTS " + chatRoomTableName + " "
+        query.prepare("CREATE TABLE IF NOT EXISTS " + tableName + " "
                                                                      "("
                                                                         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                                                                         "message TEXT, "
@@ -109,10 +115,18 @@ public:
                                                                      ");");
         query.exec();
 
-        query.prepare("INSERT INTO ChatRoomCatalogue (chatRoomTableName, isPrivate, ownerPublicKey) "
-                      "VALUES ('" + chatRoomTableName + "', "
-                      "" + std::to_string(isPrivate ? 1 : 0) + ","
-                      + toString(ownerPublicKey) + ");");
+        query.prepare("INSERT INTO ChatRoomCatalogue (chatRoomName, chatRoomTableName, isPrivate, ownerPublicKey) "
+                      "VALUES (:chatRoomName, "
+                      ":chatRoomTableName, "
+                      ":isPrivate, "
+                      ":ownerPublicKey)");
+        query.bindValue(":chatRoomName", chatRoomName);
+        query.bindValue(":chatRoomTableName", tableName);
+        query.bindValue(":isPrivate", isPrivate);
+        query.bindValue(":ownerPublicKey", toString(ownerPublicKey));
+        query.exec();
+
+        query.prepare("INSERT INTO " + tableName + "_members (userId) VALUES ((SELECT userId FROM UserCatalogue WHERE publicKey = '" + toString(ownerPublicKey) + "'));");
         query.exec();
     }
 
