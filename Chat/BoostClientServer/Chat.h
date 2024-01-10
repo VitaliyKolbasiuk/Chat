@@ -182,7 +182,6 @@ public:
             {
                 qDebug() << "<RequestMessagesPacket> received";
                 const RequestMessagesPacket& request = *(reinterpret_cast<const RequestMessagesPacket*>(readBuffer));
-                qDebug() << "Request messages packet received: " << request.m_chatRoomId.m_id;
                 boost::asio::post( gDatabaseIoContext, [=, this]() mutable
                 {
                     //m_database.onUserConnected();
@@ -203,6 +202,20 @@ public:
                 {
                     m_database.createChatRoomTable(packet.m_chatRoomName, packet.m_isPrivate, packet.m_publicKey, session);
                 } );
+                break;
+            }
+            case TextMessagePacket::type:
+            {
+                const TextMessagePacket& packet = *(reinterpret_cast<const TextMessagePacket*>(readBuffer));
+                uint64_t time;
+                ChatRoomId chatRoomId;
+                Key publicKey;
+                std::string message = parseTextMessagePacket(readBuffer, packetSize ,time, chatRoomId, publicKey);
+
+                boost::asio::post(gDatabaseIoContext, [=, this]() mutable{
+                    m_database.appendMessageToChatRoom(chatRoomId.m_id, publicKey, time, message);
+                });
+
                 break;
             }
         }

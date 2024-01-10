@@ -127,8 +127,6 @@ public:
                     PacketHeader<RequestMessagesPacket> request;
                     request.m_packet.m_chatRoomId = chatRoomInfo.m_id;
                     request.m_packet.m_messageNumber = 100;
-                    qDebug() << "RequestMessagesPacket: Chat room ID: " << request.m_packet.m_chatRoomId.m_id << ' ' << chatRoomInfo.m_id.m_id;
-                    qDebug() << "RequestMessagesPacket: Chat room message number: " << request.m_packet.m_messageNumber;
                     if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
                     {
                         tcpClient->sendPacket(request);

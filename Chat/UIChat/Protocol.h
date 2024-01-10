@@ -256,9 +256,9 @@ struct TextMessagePacket{
     }
 };
 
-inline TextMessagePacket* createTextMessagePacket(const std::string& message, ChatRoomId chatRoomId)
+inline TextMessagePacket* createTextMessagePacket(const std::string& message, ChatRoomId chatRoomId, const Key& publicKey)
 {
-    size_t bufferSize = sizeof(PacketHeaderBase) + sizeof(uint64_t) + message.size() + 1;
+    size_t bufferSize = sizeof(PacketHeaderBase) + sizeof(uint64_t) + sizeof(chatRoomId) + sizeof(Key) + message.size() + 1;
 
     auto* buffer = new uint8_t[bufferSize];
 
@@ -268,16 +268,19 @@ inline TextMessagePacket* createTextMessagePacket(const std::string& message, Ch
 
     *reinterpret_cast<uint64_t*>(buffer + sizeof(*header)) = currentUtc();
     *reinterpret_cast<ChatRoomId*>(buffer + sizeof(*header) + sizeof(uint64_t)) = chatRoomId;
-    std::memcpy(buffer + sizeof(*header) + sizeof(uint64_t) + sizeof(ChatRoomId), message.c_str(), message.size() + 1);
+    *reinterpret_cast<Key*>(buffer + sizeof(*header) + sizeof(uint64_t) + sizeof(ChatRoomId)) = publicKey;
+    std::memcpy(buffer + sizeof(*header) + sizeof(uint64_t) + sizeof(ChatRoomId) + sizeof(Key), message.c_str(), message.size() + 1);
 
     return reinterpret_cast<TextMessagePacket*>(buffer);
 }
 
-inline std::string parseTextMessagePacket(const uint8_t* buffer, size_t bufferSize, uint64_t& time, ChatRoomId& chatRoomId)
+inline std::string parseTextMessagePacket(const uint8_t* buffer, size_t bufferSize, uint64_t& time, ChatRoomId& chatRoomId, Key& publicKey)
 {
     time = *reinterpret_cast<const uint64_t*>(buffer);
     chatRoomId = *reinterpret_cast<const ChatRoomId*>(buffer + sizeof(uint64_t));
-    std::string message(reinterpret_cast<const char*>(buffer) + sizeof(uint64_t) + sizeof(ChatRoomId), bufferSize - sizeof(uint64_t) - 1);
+    publicKey = *reinterpret_cast<const Key*>(buffer + sizeof(uint64_t) + sizeof(ChatRoomId));
+    std::string message(reinterpret_cast<const char*>(buffer) + sizeof(uint64_t) + sizeof(ChatRoomId) + sizeof(Key), bufferSize - sizeof(PacketHeaderBase) - sizeof(uint64_t) - sizeof(ChatRoomId) - sizeof(Key) - 1);
+
     return message;
 }
 

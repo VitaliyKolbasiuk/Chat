@@ -172,11 +172,9 @@ void MainWindow::on_SendMessage_released()
     if (!userMessage.empty())
     {
         ChatRoomId chatRoomId((uint64_t)ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toULongLong());
-        qDebug() << chatRoomId.m_id;
-        auto* packet = createTextMessagePacket(userMessage, chatRoomId);
+        auto* packet = createTextMessagePacket(userMessage, chatRoomId, m_settings->m_keyPair.m_publicKey);
         m_tcpClient->sendBufferedPacket<TextMessagePacket>(packet);
-        //std::string message = MESSAGE_TO_ALL_CMD ";" + userMessage.toStdString() + ";";
-        //m_chatClient->sendUserMessage(message);
+
         ui->UserMessage->clear();
     }
 }

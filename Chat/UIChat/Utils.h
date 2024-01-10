@@ -41,3 +41,17 @@ inline uint64_t currentUtc()
     return seconds_since_epoch.count();
 }
 
+
+inline void parseUtcTime(uint64_t utcTime, int& year, int& month, int& day, int& hour, int& minute, int& second)
+{
+    std::time_t time = static_cast<std::time_t>(utcTime);
+    std::tm* tmInfo = std::gmtime(&time);
+
+    year = tmInfo->tm_year + 1900;
+    month = tmInfo->tm_mon + 1;
+    day = tmInfo->tm_mday;
+    hour = tmInfo->tm_hour;
+    minute = tmInfo->tm_min;
+    second = tmInfo->tm_sec;
+}
+
