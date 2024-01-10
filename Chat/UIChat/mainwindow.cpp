@@ -42,7 +42,34 @@ void MainWindow::init()
         //ui->textBrowser->append(username + message + "<br>");
     });
 
+    connect(m_chatClient.get(), &QChatClient::OnChatRoomAddedOrDeleted, this, [this](const ChatRoomId& chatRoomId, const std::string& chatRoomName, bool isAdd){
+        QListWidgetItem *newItem = new QListWidgetItem;
+        QVariant id(chatRoomId.m_id);
+        newItem->setData(Qt::UserRole, id);
+        newItem->setText(QString::fromStdString(chatRoomName));
+
+        if (isAdd)
+        {
+            ui->m_chatRoomList->insertItem(0, newItem);
+        }
+        else
+        {
+            QList<QListWidgetItem *> itemsToRemove = ui->m_chatRoomList->findItems(QString::fromStdString(chatRoomName), Qt::MatchExactly);
+
+            for (auto item : itemsToRemove)
+            {
+                if (item->data(Qt::UserRole).toUInt() == 5)
+                {
+                    int row = ui->m_chatRoomList->row(item);
+                    ui->m_chatRoomList->takeItem(row);
+                    delete item;
+                }
+            }
+        }
+    });
+
     connect(m_chatClient.get(), &QChatClient::OnTableChanged, this, [this](const ModelChatRoomList& chatRoomInfoList){
+        ui->m_chatRoomList->clear();
         for (const auto& [key, chatRoomInfo] : chatRoomInfoList)
         {
             QListWidgetItem *newItem = new QListWidgetItem;
@@ -145,6 +172,7 @@ void MainWindow::on_SendMessage_released()
     if (!userMessage.empty())
     {
         ChatRoomId chatRoomId((uint64_t)ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toULongLong());
+        qDebug() << chatRoomId.m_id;
         auto* packet = createTextMessagePacket(userMessage, chatRoomId);
         m_tcpClient->sendBufferedPacket<TextMessagePacket>(packet);
         //std::string message = MESSAGE_TO_ALL_CMD ";" + userMessage.toStdString() + ";";

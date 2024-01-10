@@ -89,7 +89,7 @@ public:
     // TODO unread messages in db
 
 
-    virtual void createChatRoomTable(const std::string& chatRoomName, bool isPrivate, Key ownerPublicKey) override
+    virtual void createChatRoomTable(const std::string& chatRoomName, bool isPrivate, Key ownerPublicKey, std::weak_ptr<ServerSession> session) override
     {
         std::array<uint8_t, 20> randomTableName;
         generateRandomKey(randomTableName);
@@ -128,6 +128,30 @@ public:
 
         query.prepare("INSERT INTO " + tableName + "_members (userId) VALUES ((SELECT userId FROM UserCatalogue WHERE publicKey = '" + toString(ownerPublicKey) + "'));");
         query.exec();
+
+        query.prepare("SELECT chatRoomId FROM ChatRoomCatalogue WHERE chatRoomTableName = '" + tableName + "';");
+        query.exec();
+        query.next();
+        uint32_t id = (uint32_t)query.value(0).toUInt();
+
+        updateChatRoomList(chatRoomName, id, true, session);
+    }
+
+    void updateChatRoomList(const std::string& chatRoomName, uint32_t id, bool isAdd, std::weak_ptr<ServerSession> session)
+    {
+        PacketHeader<ChatRoomUpdatePacket> packet;
+        std::memcpy(&packet.m_packet.m_chatRoomName, chatRoomName.c_str(), chatRoomName.size() + 1);
+        packet.m_packet.m_chatRoomId = id;
+        packet.m_packet.m_addOrDelete = isAdd;
+
+        boost::asio::post(gServerIoContext, [=, this]() mutable
+        {
+            if (const auto &sessionPtr = session.lock(); sessionPtr)
+            {
+                sessionPtr->sendPacket(packet);
+            }
+        });
+
     }
 
     void createChatRoomCatalogue()
@@ -137,7 +161,7 @@ public:
                                    (\
                                         chatRoomId INTEGER PRIMARY KEY AUTOINCREMENT, \
                                         chatRoomName TEXT,\
-                                        chatRoomTableName TEXT, \
+                                        chatRoomTableName TEXT UNIQUE, \
                                         ownerPublicKey TEXT VARCHAR(32),\
                                         isPrivate INT\
                                    );");

@@ -49,6 +49,7 @@ public:
     template<typename T>
     void sendPacket(PacketHeader<T>& packet)
     {
+        qDebug() << PacketHeader<T>().length() + sizeof(PacketHeaderBase) << sizeof(PacketHeader<CreateChatRoomPacket>);
         qDebug() << "Send Packet buffer length: " << packet.length() << " Type: " << gTypeMap.m_typeMap[packet.type()];
         async_write(m_socket, boost::asio::buffer(&packet, sizeof(PacketHeader<T>)),
                     [this] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {

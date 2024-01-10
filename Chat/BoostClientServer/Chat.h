@@ -176,10 +176,6 @@ public:
                     m_database.onUserConnected(response.m_publicKey, response.m_deviceKey, response.m_nickname, session);
                 } );
 
-//                if (const auto& sessionPtr = session.lock(); sessionPtr)
-//                {
-//                    sessionPtr->readPacket();
-//                }
                 break;
             }
             case RequestMessagesPacket::type:
@@ -205,7 +201,7 @@ public:
 
                 boost::asio::post( gDatabaseIoContext, [=, this]() mutable
                 {
-                    m_database.createChatRoomTable(packet.m_chatRoomName, packet.m_isPrivate, packet.m_publicKey);
+                    m_database.createChatRoomTable(packet.m_chatRoomName, packet.m_isPrivate, packet.m_publicKey, session);
                 } );
                 break;
             }

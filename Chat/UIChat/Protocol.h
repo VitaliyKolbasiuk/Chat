@@ -199,7 +199,7 @@ inline ChatRoomListPacket* createChatRoomList(const ChatRoomInfoList& chatRoomLi
     return reinterpret_cast<ChatRoomListPacket*>(buffer);
 }
 
-// TODO++
+// MESSAGE TO CLIENT
 struct ChatRoomUpdatePacket{
     enum { type = 3 };
     ChatRoomId m_chatRoomId;
@@ -215,11 +215,14 @@ struct RequestMessagesPacket{
     MessageId   m_messageId = std::numeric_limits<typeof(MessageId::m_id)>::max();
 };
 
+
+
 struct CreateChatRoomPacket{
     enum { type = 104};
     Key  m_publicKey;
     char m_chatRoomName[64];
     bool m_isPrivate;
+    char padding[3];            // DO NOT DELETE
     Sign m_sign;
 
     void sign(const PrivateKey& privateKey)
@@ -232,6 +235,7 @@ struct CreateChatRoomPacket{
         return ed25519_verify(&m_sign[0], &m_publicKey[0], sizeof(m_publicKey) + sizeof(m_chatRoomName) + sizeof(m_isPrivate), &m_publicKey[0]);
     }
 };
+
 
 struct TextMessagePacket{
     enum {type = 105};

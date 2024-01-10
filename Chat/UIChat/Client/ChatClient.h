@@ -47,6 +47,8 @@ signals:
 
     void OnTableChanged(const ModelChatRoomList& chatRoomInfoList);
 
+    void OnChatRoomAddedOrDeleted(const ChatRoomId& chatRoomId, const std::string chatRoomName, bool isAdd);
+
 private:
     std::weak_ptr<TcpClient>  m_tcpClient;
     std::string m_chatClientName;
@@ -132,6 +134,23 @@ public:
                         tcpClient->sendPacket(request);
                     }
                 }
+
+                break;
+            }
+            case ChatRoomUpdatePacket::type:
+            {
+                const ChatRoomUpdatePacket& response = *(reinterpret_cast<const ChatRoomUpdatePacket*>(packet));
+
+                if (response.m_addOrDelete)
+                {
+                    m_chatRoomInfoList[response.m_chatRoomId] = ModelChatRoomInfo{response.m_chatRoomId, response.m_chatRoomName};
+                }
+                else
+                {
+                    m_chatRoomInfoList.erase(response.m_chatRoomId);
+                }
+
+                emit OnChatRoomAddedOrDeleted(response.m_chatRoomId, response.m_chatRoomName, response.m_addOrDelete);
 
                 break;
             }

@@ -37,7 +37,7 @@ public:
     virtual void test() = 0;
     virtual ChatRoomInfoList getChatRoomList(const int& userUniqueKey) = 0;
     virtual void onUserConnected(const Key& publicKey, const Key& deviceKey, const std::string& nickname, std::weak_ptr<ServerSession> session) = 0;
-    virtual void createChatRoomTable(const std::string& chatRoomName, bool isPrivate, Key ownerPublicKey) = 0;
+    virtual void createChatRoomTable(const std::string& chatRoomName, bool isPrivate, Key ownerPublicKey, std::weak_ptr<ServerSession> session) = 0;
 };
 
 IChatDatabase* createDatabase();
