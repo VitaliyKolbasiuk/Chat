@@ -51,6 +51,7 @@ void MainWindow::init()
         if (isAdd)
         {
             ui->m_chatRoomList->insertItem(0, newItem);
+            ui->m_chatRoomList->setCurrentRow(0);
         }
         else
         {

@@ -30,6 +30,25 @@ std::string arrayToHexString(const std::array<uint8_t, N>& arr)
     return ss.str();
 }
 
+template<size_t N>
+std::array<uint8_t, N> parseHexString(const std::string& hexString) {
+    std::array<uint8_t, N> byteArr;
+
+    // Ensure that the hex string has an even number of characters
+    if (hexString.length() % 2 != 0) {
+        std::cout << "Invalid hex string length." << std::endl;
+        return byteArr;
+    }
+
+    for (std::size_t i = 0; i < hexString.length(); i += 2) {
+        std::string byteString = hexString.substr(i, 2);
+        uint8_t byte = static_cast<uint8_t>(std::stoi(byteString, nullptr, 16));
+        byteArr[i / 2] = byte;
+    }
+
+    return byteArr;
+}
+
 inline uint64_t currentUtc()
 {
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();

@@ -11,18 +11,6 @@
 
 class ChatRoom;
 
-struct User
-{
-    ChatRoom* m_room = nullptr;
-    ServerSession* m_session;
-    std::string m_username;
-
-    User(ChatRoom* room = nullptr, ServerSession* session = nullptr) : m_room(room), m_session(session) {}
-
-    User (const User&) = default;
-    User& operator=(const User&) = default;
-};
-
 struct Connection
 {
     std::weak_ptr<ServerSession>    m_session;
@@ -32,42 +20,21 @@ struct Connection
 
 struct UserInfo
 {
-    std::string             m_nickname;
-    Key                     m_publicKey;
     std::vector<Connection> m_connections;
 
-    UserInfo(const std::string& nickname, const Key& publicKey ) : m_nickname(nickname), m_publicKey(publicKey) {}
+    UserInfo() {}
 };
 
-class ChatRoom
+struct ChatRoom
 {
-    std::map<std::string, User> m_clients;
-public:
-    //std::map<std::string, User> m_clients;
+    std::string chatRoomName;
+    std::string chatRoomTableName;
+    Key         ownerPublicKey;
+    bool        isPrivate;
+    std::map<Key, std::weak_ptr<UserInfo>> m_clients;
 
-    ChatRoom() {}
 
-    bool addClient(User client)
-    {
-        if (m_clients.find(client.m_username) != m_clients.end())
-        {
-            return false;
-        }
-        m_clients[client.m_username] = client;
-        return true;
-    }
-
-    bool removeClient(User client)
-    {
-        m_clients.erase(client.m_username);
-        if (m_clients.empty())
-        {
-            return false;
-        }
-        return true;
-    }
-
-    std::map<std::string, User>& clients()
+    std::map<Key, std::weak_ptr<UserInfo>>& clients()
     {
         return m_clients;
     }
@@ -76,12 +43,18 @@ public:
 
 class Chat: public IChat
 {
+    // TODO remove user when disconnects
     std::map<Key, std::shared_ptr<UserInfo>> m_users;
     std::map<ChatRoomId, ChatRoom> m_chatRooms;
     IChatDatabase& m_database;
 
 public:
-    Chat(IChatDatabase& database) : m_database(database) {}
+    Chat(IChatDatabase& database) : m_database(database)
+    {
+        m_database.readChatRoomCatalogue([this](uint32_t chatRoomId, const std::string& chatRoomName, const std::string& chatRoomTableName, const Key& publicKey, bool isPrivate){
+            m_chatRooms[ChatRoomId(chatRoomId)] = ChatRoom{chatRoomName, chatRoomTableName, publicKey, isPrivate};
+        });
+    }
 
     virtual void onPacketReceived(uint16_t packetType, const uint8_t* readBuffer, uint16_t packetSize, std::weak_ptr<ServerSession> session) override
     {
@@ -97,10 +70,9 @@ public:
                 auto it = m_users.find(request.m_publicKey);
                 if (it == m_users.end())
                 {
-                    auto userInfo = std::make_shared<UserInfo>(request.m_nickname, request.m_publicKey);
+                    auto userInfo = std::make_shared<UserInfo>();
                     it = m_users.insert({request.m_publicKey, userInfo}).first;
-                    it->second->m_publicKey = request.m_publicKey;
-                    it->second->m_nickname = request.m_nickname;
+                    // PUSH BACK LOWER userInfo->m_connections.push_back(session);
                 }
 
                 // Add connection
@@ -173,7 +145,19 @@ public:
 
                 boost::asio::post( gDatabaseIoContext, [=, this]() mutable
                 {
-                    m_database.onUserConnected(response.m_publicKey, response.m_deviceKey, response.m_nickname, session);
+                    m_database.onUserConnected(response.m_publicKey, response.m_deviceKey, response.m_nickname, [this, response, session](const ChatRoomInfoList& chatRoomList){
+                        if (const auto &sessionPtr = session.lock(); sessionPtr)
+                        {
+                            qDebug() << "ChatRoomListPacket has been sent";
+                            ChatRoomListPacket *packet = createChatRoomList(chatRoomList);
+                            sessionPtr->sendBufferedPacket<ChatRoomListPacket>(packet);
+
+                            for (auto& chatRoomInfo : chatRoomList)
+                            {
+                                m_chatRooms[(ChatRoomId)chatRoomInfo.m_chatRoomId].m_clients[response.m_publicKey] = m_users[response.m_publicKey];
+                            }
+                        }
+                    });
                 } );
 
                 break;
@@ -200,7 +184,9 @@ public:
 
                 boost::asio::post( gDatabaseIoContext, [=, this]() mutable
                 {
-                    m_database.createChatRoomTable(packet.m_chatRoomName, packet.m_isPrivate, packet.m_publicKey, session);
+                    ChatRoomId chatRoomId {(uint32_t)m_database.createChatRoomTable(packet.m_chatRoomName, packet.m_isPrivate, packet.m_publicKey, session)};
+                    assert(m_users.find(packet.m_publicKey) != m_users.end());
+                    m_chatRooms[chatRoomId].m_clients[packet.m_publicKey] = m_users[packet.m_publicKey];
                 } );
                 break;
             }
@@ -213,7 +199,17 @@ public:
                 std::string message = parseTextMessagePacket(readBuffer, packetSize ,time, chatRoomId, publicKey);
 
                 boost::asio::post(gDatabaseIoContext, [=, this]() mutable{
-                    m_database.appendMessageToChatRoom(chatRoomId.m_id, publicKey, time, message);
+                    int senderId;
+                    if (m_database.appendMessageToChatRoom(chatRoomId.m_id, publicKey, time, message, senderId))
+                    {
+                        boost::asio::post(gServerIoContext, [=, this]() mutable{
+                            sendMessageToClients(message, chatRoomId, time, senderId, publicKey);
+                        });
+                    }
+                    else
+                    {
+
+                    }
                 });
 
                 break;
@@ -221,4 +217,28 @@ public:
         }
     }
 
+    void sendMessageToClients(const std::string& message, ChatRoomId chatRoomId, uint64_t time, int senderId, const Key& publicKey)
+    {
+        auto it = m_chatRooms.find(chatRoomId);
+        if (it == m_chatRooms.end())
+        {
+            qCritical() << "Internal error";
+            return;
+        }
+        for (auto& user : it->second.clients())
+        {
+            auto userIt = m_users.find(user.first);
+            if (userIt != m_users.end())
+            {
+                for (auto& connection : userIt->second->m_connections)
+                {
+                    if (auto session = connection.m_session.lock(); session)
+                    {
+                        auto* packet = createTextMessagePacket(message, chatRoomId, publicKey, &time);
+                        session->sendBufferedPacket<TextMessagePacket>(packet);
+                    }
+                }
+            }
+        }
+    }
 };

@@ -190,7 +190,6 @@ public:
         return true;
     }
 
-
     virtual void closeConnection() override
     {
         exit(1);

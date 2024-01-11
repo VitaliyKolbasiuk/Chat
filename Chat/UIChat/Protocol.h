@@ -221,8 +221,7 @@ struct CreateChatRoomPacket{
     enum { type = 104};
     Key  m_publicKey;
     char m_chatRoomName[64];
-    bool m_isPrivate;
-    char padding[3];            // DO NOT DELETE
+    uint32_t m_isPrivate;
     Sign m_sign;
 
     void sign(const PrivateKey& privateKey)
@@ -256,7 +255,7 @@ struct TextMessagePacket{
     }
 };
 
-inline TextMessagePacket* createTextMessagePacket(const std::string& message, ChatRoomId chatRoomId, const Key& publicKey)
+inline TextMessagePacket* createTextMessagePacket(const std::string& message, ChatRoomId chatRoomId, const Key& publicKey, uint64_t* time = nullptr)
 {
     size_t bufferSize = sizeof(PacketHeaderBase) + sizeof(uint64_t) + sizeof(chatRoomId) + sizeof(Key) + message.size() + 1;
 
@@ -266,7 +265,14 @@ inline TextMessagePacket* createTextMessagePacket(const std::string& message, Ch
     header->setType(TextMessagePacket::type);
     header->setLength((uint32_t)bufferSize);
 
-    *reinterpret_cast<uint64_t*>(buffer + sizeof(*header)) = currentUtc();
+    if (!time)
+    {
+        *reinterpret_cast<uint64_t*>(buffer + sizeof(*header)) = currentUtc();
+    }
+    else
+    {
+        *reinterpret_cast<uint64_t*>(buffer + sizeof(*header)) = *time;
+    }
     *reinterpret_cast<ChatRoomId*>(buffer + sizeof(*header) + sizeof(uint64_t)) = chatRoomId;
     *reinterpret_cast<Key*>(buffer + sizeof(*header) + sizeof(uint64_t) + sizeof(ChatRoomId)) = publicKey;
     std::memcpy(buffer + sizeof(*header) + sizeof(uint64_t) + sizeof(ChatRoomId) + sizeof(Key), message.c_str(), message.size() + 1);

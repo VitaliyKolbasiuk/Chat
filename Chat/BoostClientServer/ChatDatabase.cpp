@@ -89,7 +89,7 @@ public:
     // TODO unread messages in db
 
 
-    virtual void createChatRoomTable(const std::string& chatRoomName, bool isPrivate, Key ownerPublicKey, std::weak_ptr<ServerSession> session) override
+    virtual int createChatRoomTable(const std::string& chatRoomName, bool isPrivate, Key ownerPublicKey, std::weak_ptr<ServerSession> session) override
     {
         std::array<uint8_t, 20> randomTableName;
         generateRandomKey(randomTableName);
@@ -135,6 +135,8 @@ public:
         uint32_t id = (uint32_t)query.value(0).toUInt();
 
         updateChatRoomList(chatRoomName, id, true, session);
+
+        return id;
     }
 
     void updateChatRoomList(const std::string& chatRoomName, uint32_t id, bool isAdd, std::weak_ptr<ServerSession> session)
@@ -179,9 +181,8 @@ public:
         //query.exec("INSERT INTO ChatRoomCatalogue (chatRoomName, chatRoomTableName) VALUES ('Room1', 'Room1_members');");
     }
 
-    virtual void appendMessageToChatRoom(int chatRoomId, const Key& publicKey, uint64_t dataTime, const std::string& message) override
+    virtual bool appendMessageToChatRoom(int chatRoomId, const Key& publicKey, uint64_t dataTime, const std::string& message, int& senderId) override
     {
-        int senderId;
         if (getUserId(publicKey, senderId))
         {
             Query query(m_db);
@@ -191,23 +192,29 @@ public:
             query.bindValue(":senderId", senderId);
             query.bindValue(":time", dataTime);
             query.exec();
+
+            return true;
         }
         else
         {
             qCritical() << "Corrupted database";
+            return false;
         }
+
     }
 
     int getChatRoomId(const std::string& chatRoomName)
     {
         Query query(m_db);
-        query.prepare("SELECT chatRoomId FROM ChatRoomCatalogue WHERE chatRoomName = '" + chatRoomName + "' ;");
+        query.prepare("SELECT chatRoomId FROM ChatRoomCatalogue WHERE chatRoomTableName = '" + chatRoomName + "' ;");
+        query.exec();
+        query.next();
         auto chatRoomId = query.value(0).toInt();
         qDebug() << query.value(0);
         return chatRoomId;
     }
 
-    bool getUserId(const Key& publicKey, int& userId)
+    virtual bool getUserId(const Key& publicKey, int& userId) override
     {
         Query query(m_db);
         bool ok;
@@ -227,7 +234,7 @@ public:
         return query.value(0).toString().toStdString();
     }
 
-    void onUserConnected(const Key& publicKey, const Key& deviceKey, const std::string& nickname, std::weak_ptr<ServerSession> session) override
+    void onUserConnected(const Key& publicKey, const Key& deviceKey, const std::string& nickname, std::function<void(const ChatRoomInfoList&)> func) override
     {
         Query query (m_db);
         query.prepare("INSERT INTO UserCatalogue (publicKey , deviceKey, nickname) VALUES (:publicKey, :deviceKey, :nickname);");
@@ -243,12 +250,7 @@ public:
 
             boost::asio::post(gServerIoContext, [=, this]() mutable
             {
-                if (const auto &sessionPtr = session.lock(); sessionPtr)
-                {
-                    qDebug() << "ChatRoomListPacket has been sent";
-                    ChatRoomListPacket *packet = createChatRoomList(chatRoomList);
-                    sessionPtr->sendBufferedPacket<ChatRoomListPacket>(packet);
-                }
+                func(chatRoomList);
             });
         }
         else
@@ -281,6 +283,24 @@ public:
         }
         return chatRooms;
     }
+
+    virtual void readChatRoomCatalogue(std::function<void(uint32_t, const std::string&, const std::string&, const Key&, bool)> func) override
+    {
+        Query query(m_db);
+        query.prepare("SELECT chatRoomId, chatRoomName, chatRoomTableName, ownerPublicKey, isPrivate FROM ChatRoomCatalogue;");
+        query.exec();
+        while (query.next())
+        {
+            uint32_t chatRoomId = query.value(0).toUInt();
+            std::string chatRoomName = query.value(1).toString().toStdString();
+            std::string chatRoomTableName = query.value(2).toString().toStdString();
+            Key publicKey = parseHexString<32>(query.value(3).toString().toStdString());
+            bool isPrivate = query.value(4).toBool();
+
+            func(chatRoomId, chatRoomName, chatRoomTableName, publicKey, isPrivate);
+        }
+    }
+
 
     void test() override
     {

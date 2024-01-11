@@ -45,6 +45,8 @@ struct MessageId{
 struct ChatRoomInfo{
     uint32_t    m_chatRoomId;
     std::string m_chatRoomName;
+    Key         m_ownerPublicKey;
+    bool        m_isPrivate;
 };
 
 using ChatRoomInfoList = std::vector<ChatRoomInfo>;
