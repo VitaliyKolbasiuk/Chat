@@ -44,6 +44,21 @@ public:
     }
 
     template<typename T>
+    void sendPacket(PacketHeader<T>* packet)
+    {
+        qDebug() << "Send packet type: " << gTypeMap.m_typeMap[packet->type()];
+        async_write(m_socket, boost::asio::buffer(&packet, sizeof(PacketHeader<T>)),
+                    [this, packet] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
+                        delete packet;
+                        if ( ec )
+                        {
+                            qCritical()<< "!!!! Session::sendMessage error (1): " << ec.message();
+                            exit(-1);
+                        }
+                    });
+    }
+
+    template<typename T>
     void sendBufferedPacket(T* packet)
     {
         async_write(m_socket, boost::asio::buffer(packet, packet->length()),

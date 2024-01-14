@@ -21,9 +21,7 @@ int main(int argc, char *argv[])
     std::thread serverThread(
         []
         {
-            IChatDatabase* database = createDatabase();
-            database->test();
-            Chat chat(*database);
+            Chat chat;
 
             IServer* server = createServer(gServerIoContext, chat, 1234);
             server->execute();

@@ -66,9 +66,10 @@ struct Query{
 class ChatDatabase : public IChatDatabase
 {
     QSqlDatabase m_db;
+    IChat&       m_chat;
 
 public:
-    ChatDatabase() {
+    ChatDatabase(IChat& chat) : m_chat(chat) {
         //qDebug() << QSqlDatabase::drivers();
         //std::filesystem::remove("ChatDatabase.sqlite");
 
@@ -89,7 +90,7 @@ public:
     // TODO unread messages in db
 
 
-    virtual int createChatRoomTable(const std::string& chatRoomName, bool isPrivate, Key ownerPublicKey, std::weak_ptr<ServerSession> session) override
+    virtual int createChatRoomTable(const std::string& chatRoomName, bool isPrivate, Key ownerPublicKey,  std::weak_ptr<ServerSession> session) override
     {
         std::array<uint8_t, 20> randomTableName;
         generateRandomKey(randomTableName);
@@ -134,27 +135,11 @@ public:
         query.next();
         uint32_t id = (uint32_t)query.value(0).toUInt();
 
-        updateChatRoomList(chatRoomName, id, true, session);
+        m_chat.updateChatRoomList(chatRoomName, id, true, session);
 
         return id;
     }
 
-    void updateChatRoomList(const std::string& chatRoomName, uint32_t id, bool isAdd, std::weak_ptr<ServerSession> session)
-    {
-        PacketHeader<ChatRoomUpdatePacket> packet;
-        std::memcpy(&packet.m_packet.m_chatRoomName, chatRoomName.c_str(), chatRoomName.size() + 1);
-        packet.m_packet.m_chatRoomId = id;
-        packet.m_packet.m_addOrDelete = isAdd;
-
-        boost::asio::post(gServerIoContext, [=, this]() mutable
-        {
-            if (const auto &sessionPtr = session.lock(); sessionPtr)
-            {
-                sessionPtr->sendPacket(packet);
-            }
-        });
-
-    }
 
     void createChatRoomCatalogue()
     {
@@ -181,7 +166,7 @@ public:
         //query.exec("INSERT INTO ChatRoomCatalogue (chatRoomName, chatRoomTableName) VALUES ('Room1', 'Room1_members');");
     }
 
-    virtual bool appendMessageToChatRoom(int chatRoomId, const Key& publicKey, uint64_t dataTime, const std::string& message, int& senderId) override
+    virtual uint32_t appendMessageToChatRoom(int chatRoomId, const Key& publicKey, uint64_t dataTime, const std::string& message, int& senderId) override
     {
         if (getUserId(publicKey, senderId))
         {
@@ -193,12 +178,16 @@ public:
             query.bindValue(":time", dataTime);
             query.exec();
 
-            return true;
+            QSqlQuery lastIdQuery("SELECT LAST_INSERT_ID()");
+            lastIdQuery.next();
+            int messageId = lastIdQuery.value(0).toInt();
+            qDebug() << "Message id:" << messageId;
+            return messageId;
         }
         else
         {
             qCritical() << "Corrupted database";
-            return false;
+            return std::numeric_limits<uint32_t>::max();
         }
 
     }
@@ -248,10 +237,7 @@ public:
         {
             ChatRoomInfoList chatRoomList = getChatRoomList(userId);
 
-            boost::asio::post(gServerIoContext, [=, this]() mutable
-            {
-                func(chatRoomList);
-            });
+            func(chatRoomList);
         }
         else
         {
@@ -324,7 +310,7 @@ public:
 
 };
 
-IChatDatabase* createDatabase()
+IChatDatabase* createDatabase(IChat& chat)
 {
-    return (IChatDatabase*)new ChatDatabase;
+    return (IChatDatabase*)new ChatDatabase(chat);
 }

@@ -16,7 +16,7 @@
 
 
 struct ModelChatRoomInfo{
-    ChatRoomId          m_id;
+    ChatRoomId  m_id;
     std::string m_name;
     int         m_position = 0;
     int         m_offset = 0;
@@ -43,7 +43,7 @@ class QChatClient : public QObject, public IChatClient
 public:
 
 signals:
-    void OnMessageReceived(QString username, QString message);
+    void OnMessageReceived(ChatRoomId chatRoomId, const std::string& username, const std::string& message, uint64_t time);
 
     void OnTableChanged(const ModelChatRoomList& chatRoomInfoList);
 
@@ -80,7 +80,7 @@ public:
         {
             m_settings.m_username.erase(m_settings.m_username.begin() + maxSize, m_settings.m_username.end());
         }
-        std::memcpy(&m_connectRequest.m_packet.m_nickname, m_settings.m_username.c_str(), m_settings.m_username.size());
+        std::memcpy(&m_connectRequest.m_packet.m_nickname, m_settings.m_username.c_str(), m_settings.m_username.size() + 1);
 
         if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
         {
@@ -151,6 +151,17 @@ public:
                 emit OnChatRoomAddedOrDeleted(response.m_chatRoomId, response.m_chatRoomName, response.m_addOrDelete);
 
                 break;
+            }
+            case TextMessagePacket::type:
+            {
+                uint64_t time;
+                ChatRoomId chatRoomId;
+                std::string username;
+                UserId userId;
+                MessageId messageId;
+                std::string message = parseTextMessagePacket(packet, packetSize ,time, chatRoomId, messageId, userId, username);
+
+                emit OnMessageReceived(chatRoomId, username, message, time);    // TODO
             }
         }
     }

@@ -9,6 +9,7 @@
 #include "SettingsDialog.h"
 
 #include <QDir>
+#include <QTextBrowser>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainWindow)
 {
@@ -38,8 +39,36 @@ void MainWindow::init()
     }
     m_chatClient = std::make_shared<QChatClient>(*m_settings);
 
-    connect(m_chatClient.get(), &QChatClient::OnMessageReceived, this, [this](auto username, auto message){
-        //ui->textBrowser->append(username + message + "<br>");
+    connect(m_chatClient.get(), &QChatClient::OnMessageReceived, this, [this](ChatRoomId chatRoomId, const std::string& username, const std::string& message, uint64_t time){
+        int year, month, day, hour, minute, second;
+        parseUtcTime(time, year, month, day, hour, minute, second);
+
+        for (int i = 0; i < ui->m_chatRoomList->count(); i++)
+        {
+            if (ui->m_chatRoomList->item(i)->data(Qt::UserRole) == chatRoomId.m_id)
+            {
+                ui->m_chatRoomList->setCurrentRow(i);
+
+                QListWidgetItem *newItem = new QListWidgetItem;
+                QTextBrowser *textBrowser = new QTextBrowser;
+                QVariant messageId(ui->m_chatRoomArea->count() + 1);
+                newItem->setData(Qt::UserRole, messageId);
+
+                QString htmlText = QString::fromStdString(username) + "<br>" +
+                                   QString::fromStdString(message) + "<br>" +
+                                   QString::fromStdString(std::to_string(hour)) + ':' +
+                                   QString::fromStdString(std::to_string(minute));
+
+                textBrowser->setHtml(htmlText);
+                newItem->setSizeHint(textBrowser->sizeHint());
+
+                ui->m_chatRoomArea->addItem(newItem);
+                ui->m_chatRoomArea->setItemWidget(newItem, textBrowser);
+
+
+                break;
+            }
+        }
     });
 
     connect(m_chatClient.get(), &QChatClient::OnChatRoomAddedOrDeleted, this, [this](const ChatRoomId& chatRoomId, const std::string& chatRoomName, bool isAdd){
@@ -173,8 +202,8 @@ void MainWindow::on_SendMessage_released()
     if (!userMessage.empty())
     {
         ChatRoomId chatRoomId((uint64_t)ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toULongLong());
-        auto* packet = createTextMessagePacket(userMessage, chatRoomId, m_settings->m_keyPair.m_publicKey);
-        m_tcpClient->sendBufferedPacket<TextMessagePacket>(packet);
+        auto* packet = createSendTextMessagePacket(userMessage, chatRoomId, m_settings->m_keyPair.m_publicKey);
+        m_tcpClient->sendBufferedPacket<SendTextMessagePacket>(packet);
 
         ui->UserMessage->clear();
     }

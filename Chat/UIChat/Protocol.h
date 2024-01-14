@@ -7,6 +7,7 @@
 #include <cereal/types/vector.hpp>
 #include <QDebug>
 #include <memory>
+#include <cmath>
 
 #include "Types.h"
 #include "ed25519/src/ed25519.h"
@@ -236,7 +237,7 @@ struct CreateChatRoomPacket{
 };
 
 
-struct TextMessagePacket{
+struct SendTextMessagePacket{
     enum {type = 105};
 
     void operator delete(void *ptr)
@@ -255,9 +256,56 @@ struct TextMessagePacket{
     }
 };
 
-inline TextMessagePacket* createTextMessagePacket(const std::string& message, ChatRoomId chatRoomId, const Key& publicKey, uint64_t* time = nullptr)
+inline SendTextMessagePacket* createSendTextMessagePacket(const std::string& message, ChatRoomId chatRoomId, const Key& publicKey)
 {
     size_t bufferSize = sizeof(PacketHeaderBase) + sizeof(uint64_t) + sizeof(chatRoomId) + sizeof(Key) + message.size() + 1;
+
+    auto* buffer = new uint8_t[bufferSize];
+
+    auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
+    header->setType(SendTextMessagePacket::type);
+    header->setLength((uint32_t)bufferSize);
+    
+    *reinterpret_cast<uint64_t*>(buffer + sizeof(*header)) = currentUtc();
+    *reinterpret_cast<ChatRoomId*>(buffer + sizeof(*header) + sizeof(uint64_t)) = chatRoomId;
+    *reinterpret_cast<Key*>(buffer + sizeof(*header) + sizeof(uint64_t) + sizeof(ChatRoomId)) = publicKey;
+    std::memcpy(buffer + sizeof(*header) + sizeof(uint64_t) + sizeof(ChatRoomId) + sizeof(Key), message.c_str(), message.size() + 1);
+
+    return reinterpret_cast<SendTextMessagePacket*>(buffer);
+}
+
+inline std::string parseSendTextMessagePacket(const uint8_t* buffer, size_t bufferSize, uint64_t& time, ChatRoomId& chatRoomId, Key& publicKey)
+{
+    time = *reinterpret_cast<const uint64_t*>(buffer);
+    chatRoomId = *reinterpret_cast<const ChatRoomId*>(buffer + sizeof(uint64_t));
+    publicKey = *reinterpret_cast<const Key*>(buffer + sizeof(uint64_t) + sizeof(ChatRoomId));
+    std::string message(reinterpret_cast<const char*>(buffer) + sizeof(uint64_t) + sizeof(ChatRoomId) + sizeof(Key), bufferSize - sizeof(PacketHeaderBase) - sizeof(uint64_t) - sizeof(ChatRoomId) - sizeof(Key) - 1);
+
+    return message;
+}
+
+struct TextMessagePacket{
+    enum {type = 4};
+
+    void operator delete(void *ptr)
+    {
+        delete[] reinterpret_cast<uint8_t*>(ptr);
+    }
+
+    uint16_t length() const
+    {
+        return reinterpret_cast<const PacketHeaderBase*>(this)->length() + sizeof(PacketHeaderBase);
+    }
+
+    uint16_t packetType() const
+    {
+        return reinterpret_cast<const PacketHeaderBase*>(this)->type();
+    }
+};
+
+inline TextMessagePacket* createTextMessagePacket(const std::string& message, MessageId& messageId, ChatRoomId& chatRoomId, const UserId& userId, const std::string& username, uint64_t time)
+{
+    size_t bufferSize = sizeof(PacketHeaderBase) + sizeof(messageId) + sizeof(uint64_t) + sizeof(chatRoomId) + sizeof(UserId) + 1 + username.size() + message.size() + 1; // first +1 is a size of username
 
     auto* buffer = new uint8_t[bufferSize];
 
@@ -265,27 +313,55 @@ inline TextMessagePacket* createTextMessagePacket(const std::string& message, Ch
     header->setType(TextMessagePacket::type);
     header->setLength((uint32_t)bufferSize);
 
-    if (!time)
-    {
-        *reinterpret_cast<uint64_t*>(buffer + sizeof(*header)) = currentUtc();
-    }
-    else
-    {
-        *reinterpret_cast<uint64_t*>(buffer + sizeof(*header)) = *time;
-    }
-    *reinterpret_cast<ChatRoomId*>(buffer + sizeof(*header) + sizeof(uint64_t)) = chatRoomId;
-    *reinterpret_cast<Key*>(buffer + sizeof(*header) + sizeof(uint64_t) + sizeof(ChatRoomId)) = publicKey;
-    std::memcpy(buffer + sizeof(*header) + sizeof(uint64_t) + sizeof(ChatRoomId) + sizeof(Key), message.c_str(), message.size() + 1);
+    auto* ptr = buffer + sizeof(*header);
+
+    *reinterpret_cast<MessageId*>(ptr) = messageId;
+    ptr += sizeof(MessageId);
+
+    *reinterpret_cast<uint64_t*>(ptr) = currentUtc();
+    ptr += sizeof(uint64_t);
+
+    *reinterpret_cast<ChatRoomId*>(ptr) = chatRoomId;
+    ptr += sizeof(chatRoomId);
+
+    *reinterpret_cast<UserId*>(ptr) = userId;
+    ptr += sizeof(UserId);
+
+    size_t usernameSize = std::min(username.size(), (size_t)255);
+    *ptr = (uint8_t)usernameSize;
+    ptr += 1;
+
+    std::memcpy(ptr, username.c_str(), usernameSize);
+    ptr += usernameSize;
+
+    std::memcpy(ptr, message.c_str(), message.size() + 1);
 
     return reinterpret_cast<TextMessagePacket*>(buffer);
 }
 
-inline std::string parseTextMessagePacket(const uint8_t* buffer, size_t bufferSize, uint64_t& time, ChatRoomId& chatRoomId, Key& publicKey)
+inline std::string parseTextMessagePacket(const uint8_t* buffer, size_t bufferSize, uint64_t& time, ChatRoomId& chatRoomId, MessageId& messageId, UserId& userId, std::string& username)
 {
-    time = *reinterpret_cast<const uint64_t*>(buffer);
-    chatRoomId = *reinterpret_cast<const ChatRoomId*>(buffer + sizeof(uint64_t));
-    publicKey = *reinterpret_cast<const Key*>(buffer + sizeof(uint64_t) + sizeof(ChatRoomId));
-    std::string message(reinterpret_cast<const char*>(buffer) + sizeof(uint64_t) + sizeof(ChatRoomId) + sizeof(Key), bufferSize - sizeof(PacketHeaderBase) - sizeof(uint64_t) - sizeof(ChatRoomId) - sizeof(Key) - 1);
+    auto* ptr = buffer;
+
+    messageId = *reinterpret_cast<const MessageId*>(ptr);
+    ptr += sizeof(MessageId);
+
+    time = *reinterpret_cast<const uint64_t*>(ptr);
+    ptr += sizeof(uint64_t);
+
+    chatRoomId = *reinterpret_cast<const ChatRoomId*>(ptr);
+    ptr += sizeof(ChatRoomId);
+
+    userId = *reinterpret_cast<const UserId*>(ptr);
+    ptr += sizeof(UserId);
+
+    size_t usernameSize = *ptr;
+    ptr += 1;
+
+    username = std::string(reinterpret_cast<const char*>(ptr), usernameSize);
+    ptr += usernameSize;
+
+    std::string message(reinterpret_cast<const char*>(ptr), buffer + bufferSize - ptr - 1);
 
     return message;
 }
@@ -300,6 +376,7 @@ struct TypeMap{
         m_typeMap[RequestMessagesPacket::type] = "<RequestMessagesPacket>";
         m_typeMap[CreateChatRoomPacket::type] = "<CreateChatRoomPacket>";
         m_typeMap[ChatRoomUpdatePacket::type] = "<ChatRoomUpdatePacket>";
+        m_typeMap[SendTextMessagePacket::type] = "<SendTextMessagePacket>";
         m_typeMap[TextMessagePacket::type] = "<TextMessagePacket>";
     }
 };
