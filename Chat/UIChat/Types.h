@@ -51,6 +51,11 @@ struct ChatRoomInfo{
 
 using ChatRoomInfoList = std::vector<ChatRoomInfo>;
 
+struct ChatRoomRecord{
+    std::time_t  m_time;
+    UserId       m_userId;
+    std::string  m_text;
+};
 
 inline char hexTable[] = {
         '0','0', '0','1', '0','2', '0','3', '0','4', '0','5', '0','6', '0','7', '0','8', '0','9', '0','a', '0','b', '0','c', '0','d', '0','e', '0','f',

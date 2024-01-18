@@ -15,15 +15,15 @@
 #include "ed25519/src/ed25519.h"
 
 
-struct ModelChatRoomInfo{
+struct ChatRoomData{
     ChatRoomId  m_id;
     std::string m_name;
     int         m_position = 0;
     int         m_offset = 0;
 
-    ModelChatRoomInfo() = default;
-    ModelChatRoomInfo(const ModelChatRoomInfo&) = default;
-    ModelChatRoomInfo(const ChatRoomId& id,const std::string& name) : m_id(id), m_name(name) {}
+    ChatRoomData() = default;
+    ChatRoomData(const ChatRoomData&) = default;
+    ChatRoomData(const ChatRoomId& id, const std::string& name) : m_id(id), m_name(name) {}
 
     struct Record{
         std::time_t  m_time;
@@ -31,10 +31,11 @@ struct ModelChatRoomInfo{
         std::string  m_username;
         std::string  m_text;
     };
+
     std::vector<Record> m_records;
 };
 
-using ModelChatRoomList = std::map<ChatRoomId, ModelChatRoomInfo>;
+using ChatRoomMap = std::map<ChatRoomId, ChatRoomData>;
 
 class QChatClient : public QObject, public IChatClient
 {
@@ -45,14 +46,14 @@ public:
 signals:
     void OnMessageReceived(ChatRoomId chatRoomId, const std::string& username, const std::string& message, uint64_t time);
 
-    void OnTableChanged(const ModelChatRoomList& chatRoomInfoList);
+    void OnTableChanged(const ChatRoomMap& chatRoomInfoList);
 
     void OnChatRoomAddedOrDeleted(const ChatRoomId& chatRoomId, const std::string chatRoomName, bool isAdd);
 
 private:
     std::weak_ptr<TcpClient>  m_tcpClient;
     std::string m_chatClientName;
-    ModelChatRoomList m_chatRoomInfoList;
+    ChatRoomMap m_chatRoomMap;
     Settings& m_settings;
 
 private:
@@ -116,13 +117,13 @@ public:
 
                 for (const auto& chatRoomInfo : chatRoomList)
                 {
-                    m_chatRoomInfoList[ChatRoomId(chatRoomInfo.m_chatRoomId)] = ModelChatRoomInfo{ChatRoomId(chatRoomInfo.m_chatRoomId), chatRoomInfo.m_chatRoomName};
+                    m_chatRoomMap[ChatRoomId(chatRoomInfo.m_chatRoomId)] = ChatRoomData{ChatRoomId(chatRoomInfo.m_chatRoomId), chatRoomInfo.m_chatRoomName};
                 }
 
                 // UPDATE ChatRoomList
-                emit OnTableChanged(m_chatRoomInfoList);
+                emit OnTableChanged(m_chatRoomMap);
 
-                for (const auto& [key, chatRoomInfo] : m_chatRoomInfoList)
+                for (const auto& [key, chatRoomInfo] : m_chatRoomMap)
                 {
                     PacketHeader<RequestMessagesPacket> request;
                     request.m_packet.m_chatRoomId = chatRoomInfo.m_id;
@@ -141,11 +142,11 @@ public:
 
                 if (response.m_addOrDelete)
                 {
-                    m_chatRoomInfoList[response.m_chatRoomId] = ModelChatRoomInfo{response.m_chatRoomId, response.m_chatRoomName};
+                    m_chatRoomMap[response.m_chatRoomId] = ChatRoomData{response.m_chatRoomId, response.m_chatRoomName};
                 }
                 else
                 {
-                    m_chatRoomInfoList.erase(response.m_chatRoomId);
+                    m_chatRoomMap.erase(response.m_chatRoomId);
                 }
 
                 emit OnChatRoomAddedOrDeleted(response.m_chatRoomId, response.m_chatRoomName, response.m_addOrDelete);
@@ -162,6 +163,15 @@ public:
                 std::string message = parseTextMessagePacket(packet, packetSize ,time, chatRoomId, messageId, userId, username);
 
                 emit OnMessageReceived(chatRoomId, username, message, time);    // TODO
+                break;
+            }
+            case ChatRoomRecordPacket::type:
+            {
+                ChatRoomId chatRoomId;
+                std::vector<ChatRoomRecord> records = parseChatRoomRecordPacket(packet, packetSize, chatRoomId);
+
+                //m_chatRoomMap[chatRoomId].OnRecords(); // TODO
+                break;
             }
         }
     }

@@ -186,7 +186,16 @@ public:
                 const RequestMessagesPacket& request = *(reinterpret_cast<const RequestMessagesPacket*>(readBuffer));
                 boost::asio::post( gDatabaseIoContext, [=, this]() mutable
                 {
-                    //m_database.onUserConnected();
+                    m_database.onRequestMessages(request.m_chatRoomId, request.m_messageNumber, request.m_messageId, [=, this](const std::vector<ChatRoomRecord>& recordsList){
+                        boost::asio::post(gServerIoContext, [=, this]() mutable
+                        {
+                            if (const auto &sessionPtr = session.lock(); sessionPtr)
+                            {
+                                auto* packet = createChatRoomRecordPacket(request.m_chatRoomId, recordsList);
+                                sessionPtr->sendBufferedPacket<ChatRoomRecordPacket>(packet);
+                            }
+                        });
+                    });
                 } );
                 break;
             }

@@ -98,7 +98,7 @@ void MainWindow::init()
         }
     });
 
-    connect(m_chatClient.get(), &QChatClient::OnTableChanged, this, [this](const ModelChatRoomList& chatRoomInfoList){
+    connect(m_chatClient.get(), &QChatClient::OnTableChanged, this, [this](const ChatRoomMap& chatRoomInfoList){
         ui->m_chatRoomList->clear();
         for (const auto& [key, chatRoomInfo] : chatRoomInfoList)
         {

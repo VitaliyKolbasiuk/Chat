@@ -39,6 +39,7 @@ public:
     virtual void readChatRoomCatalogue(std::function<void(uint32_t, const std::string&, const std::string&, const Key&, bool)> func) = 0;
     virtual ChatRoomInfoList getChatRoomList(const int& userUniqueKey) = 0;
     virtual void onUserConnected(const Key& publicKey, const Key& deviceKey, const std::string& nickname, std::function<void(const ChatRoomInfoList&)>) = 0;
+    virtual void onRequestMessages(ChatRoomId chatRoomId, int messageNumber, MessageId messageId,  std::function<void(const std::vector<ChatRoomRecord>&)>) = 0;
     virtual int createChatRoomTable(const std::string& chatRoomName, bool isPrivate, Key ownerPublicKey, std::weak_ptr<ServerSession> session) = 0;
     virtual uint32_t appendMessageToChatRoom(int chatRoomId, const Key& publicKey, uint64_t dataTime, const std::string& message, int& senderId) = 0;
     virtual bool getUserId(const Key& publicKey, int& userId) = 0;
