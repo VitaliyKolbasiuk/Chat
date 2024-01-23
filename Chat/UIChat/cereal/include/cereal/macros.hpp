@@ -57,7 +57,7 @@
 #endif // CEREAL_THREAD_SAFE
 
 #ifndef CEREAL_SIZE_TYPE
-//! Determines the data type used for size_type
+//! Determines the data packetType used for size_type
 /*! cereal uses size_type to ensure that the serialized size of
     dynamic containers is compatible across different architectures
     (e.g. 32 vs 64 bit), which may use different underlying types for
@@ -65,8 +65,8 @@
 
     More information can be found in cereal/details/helpers.hpp.
 
-    If you choose to modify this type, ensure that you use a fixed
-    size type (e.g. uint32_t). */
+    If you choose to modify this packetType, ensure that you use a fixed
+    size packetType (e.g. uint32_t). */
 #define CEREAL_SIZE_TYPE uint64_t
 #endif // CEREAL_SIZE_TYPE
 

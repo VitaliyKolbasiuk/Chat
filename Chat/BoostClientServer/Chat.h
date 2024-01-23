@@ -160,6 +160,8 @@ public:
                                                response.m_nickname,
                            [this, response, session](const ChatRoomInfoList& chatRoomList)
                            {
+                                if ( chatRoomList.empty())
+                                    return;
                                boost::asio::post(gServerIoContext, [=, this]() mutable
                                {
                                    if (const auto &sessionPtr = session.lock(); sessionPtr)

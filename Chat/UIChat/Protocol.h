@@ -29,17 +29,17 @@ protected:
     uint32_t m_length;
 
 public:
-    uint32_t type() const
+    uint32_t packetType() const
     {
         return m_type;
     }
 
-    void setType(uint32_t type)
+    void setPacketType(uint32_t type)
     {
         m_type = type;
     }
 
-    uint32_t length() const
+    uint32_t packetLength() const
     {
         return m_length;
     }
@@ -106,14 +106,14 @@ struct ChatRoomListPacket{
         delete[] reinterpret_cast<uint8_t*>(ptr);
     }
 
-    uint16_t length() const
+    uint16_t packetLength() const
     {
-        return reinterpret_cast<const PacketHeaderBase*>(this)->length() + sizeof(PacketHeaderBase);
+        return reinterpret_cast<const PacketHeaderBase *>(this)->packetLength() + sizeof(PacketHeaderBase);
     }
 
     uint16_t packetType() const
     {
-        return reinterpret_cast<const PacketHeaderBase*>(this)->type();
+        return reinterpret_cast<const PacketHeaderBase *>(this)->packetType();
     }
 };
 
@@ -144,12 +144,12 @@ inline ChatRoomInfoList parseChatRoomList(const uint8_t* buffer, size_t bufferSi
         }
         else
         {
-            qWarning() << "Invalid chatRoomListPacket (length)";
+            qWarning() << "Invalid chatRoomListPacket (packetLength)";
             return {};
         }
         if (length == 0)
         {
-            qWarning() << "Invalid chatRoomListPacket(length = 0)";
+            qWarning() << "Invalid chatRoomListPacket(packetLength = 0)";
             return {};
         }
         std::string chatRoomName;
@@ -170,33 +170,32 @@ inline ChatRoomInfoList parseChatRoomList(const uint8_t* buffer, size_t bufferSi
 
 inline ChatRoomListPacket* createChatRoomList(const ChatRoomInfoList& chatRoomList)
 {
-    size_t bufferSize = sizeof(PacketHeaderBase);
+    size_t bufferSize = 0;
     for(const auto& chatRoom : chatRoomList)
     {
         bufferSize += chatRoom.m_chatRoomName.size() + sizeof(ChatRoomId) +sizeof(uint16_t) + 1;  // length of string + zero-end
     }
 
-    auto* buffer = new uint8_t[bufferSize];
+    auto* buffer = new uint8_t[bufferSize + sizeof(PacketHeaderBase)];
 
     auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
-    header->setType(ChatRoomListPacket::type);
+    header->setPacketType(ChatRoomListPacket::type);
     header->setLength((uint32_t)bufferSize);
-    if (bufferSize > 0)
+
+    uint8_t* ptr = buffer + sizeof(PacketHeaderBase);
+    for(const auto& chatRoom : chatRoomList)
     {
-        uint8_t* ptr = buffer + sizeof(PacketHeaderBase);
-        for(const auto& chatRoom : chatRoomList)
-        {
-            std::memcpy(ptr, &chatRoom.m_chatRoomId, sizeof(chatRoom.m_chatRoomId));
-            ptr += sizeof(chatRoom.m_chatRoomId);
+        std::memcpy(ptr, &chatRoom.m_chatRoomId, sizeof(chatRoom.m_chatRoomId));
+        ptr += sizeof(chatRoom.m_chatRoomId);
 
-            uint16_t length = chatRoom.m_chatRoomName.size() + 1;
-            std::memcpy(ptr, &length, sizeof(length));
-            ptr += sizeof(length);
+        uint16_t length = chatRoom.m_chatRoomName.size() + 1;
+        std::memcpy(ptr, &length, sizeof(length));
+        ptr += sizeof(length);
 
-            std::memcpy(ptr, chatRoom.m_chatRoomName.c_str(), length);
-            ptr += length;
-        }
+        std::memcpy(ptr, chatRoom.m_chatRoomName.c_str(), length);
+        ptr += length;
     }
+
     return reinterpret_cast<ChatRoomListPacket*>(buffer);
 }
 
@@ -245,14 +244,14 @@ struct SendTextMessagePacket{
         delete[] reinterpret_cast<uint8_t*>(ptr);
     }
 
-    uint16_t length() const
+    uint16_t packetLength() const
     {
-        return reinterpret_cast<const PacketHeaderBase*>(this)->length() + sizeof(PacketHeaderBase);
+        return reinterpret_cast<const PacketHeaderBase *>(this)->packetLength() + sizeof(PacketHeaderBase);
     }
 
     uint16_t packetType() const
     {
-        return reinterpret_cast<const PacketHeaderBase*>(this)->type();
+        return reinterpret_cast<const PacketHeaderBase *>(this)->packetType();
     }
 };
 
@@ -263,8 +262,8 @@ inline SendTextMessagePacket* createSendTextMessagePacket(const std::string& mes
     auto* buffer = new uint8_t[bufferSize];
 
     auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
-    header->setType(SendTextMessagePacket::type);
-    header->setLength((uint32_t)bufferSize);
+    header->setPacketType(SendTextMessagePacket::type);
+    header->setLength((uint32_t)bufferSize - sizeof(PacketHeaderBase));
     
     *reinterpret_cast<uint64_t*>(buffer + sizeof(*header)) = currentUtc();
     *reinterpret_cast<ChatRoomId*>(buffer + sizeof(*header) + sizeof(uint64_t)) = chatRoomId;
@@ -292,14 +291,14 @@ struct TextMessagePacket{
         delete[] reinterpret_cast<uint8_t*>(ptr);
     }
 
-    uint16_t length() const
+    uint16_t packetLength() const
     {
-        return reinterpret_cast<const PacketHeaderBase*>(this)->length() + sizeof(PacketHeaderBase);
+        return reinterpret_cast<const PacketHeaderBase *>(this)->packetLength() + sizeof(PacketHeaderBase);
     }
 
     uint16_t packetType() const
     {
-        return reinterpret_cast<const PacketHeaderBase*>(this)->type();
+        return reinterpret_cast<const PacketHeaderBase *>(this)->packetType();
     }
 };
 
@@ -310,8 +309,8 @@ inline TextMessagePacket* createTextMessagePacket(const std::string& message, Me
     auto* buffer = new uint8_t[bufferSize];
 
     auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
-    header->setType(TextMessagePacket::type);
-    header->setLength((uint32_t)bufferSize);
+    header->setPacketType(TextMessagePacket::type);
+    header->setLength((uint32_t)bufferSize - sizeof(PacketHeaderBase));
 
     auto* ptr = buffer + sizeof(*header);
 
@@ -375,14 +374,14 @@ struct ChatRoomRecordPacket
         delete[] reinterpret_cast<uint8_t*>(ptr);
     }
 
-    uint16_t length() const
+    uint16_t packetLength() const
     {
-        return reinterpret_cast<const PacketHeaderBase*>(this)->length() + sizeof(PacketHeaderBase);
+        return reinterpret_cast<const PacketHeaderBase *>(this)->packetLength() + sizeof(PacketHeaderBase);
     }
 
     uint16_t packetType() const
     {
-        return reinterpret_cast<const PacketHeaderBase*>(this)->type();
+        return reinterpret_cast<const PacketHeaderBase *>(this)->packetType();
     }
 };
 
@@ -394,14 +393,14 @@ inline ChatRoomRecordPacket* createChatRoomRecordPacket(ChatRoomId chatRoomId, c
 
     for (const auto& record : records)
     {
-        bufferSize += sizeof(record.m_time) + sizeof(uint16_t) + record.m_text.size() + sizeof(record.m_userId);
+        bufferSize += sizeof(record.m_time) + sizeof(uint16_t) + record.m_text.size() + sizeof(record.m_userId) + sizeof(MessageId);
     }
 
     auto* buffer = new uint8_t[bufferSize];
 
     auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
-    header->setType(ChatRoomRecordPacket::type);
-    header->setLength((uint32_t)bufferSize);
+    header->setPacketType(ChatRoomRecordPacket::type);
+    header->setLength((uint32_t)bufferSize - sizeof(PacketHeaderBase));
 
     auto* ptr = buffer + sizeof(*header);
 
@@ -413,6 +412,9 @@ inline ChatRoomRecordPacket* createChatRoomRecordPacket(ChatRoomId chatRoomId, c
 
     for (const auto& record : records)
     {
+        *reinterpret_cast<MessageId*>(ptr) = record.m_messageId;
+        ptr += sizeof(MessageId);
+
         *reinterpret_cast<uint64_t*>(ptr) = record.m_time;
         ptr += sizeof(uint64_t);
 
@@ -447,6 +449,9 @@ inline std::vector<ChatRoomRecord> parseChatRoomRecordPacket(const uint8_t* buff
 
     for (int i = 0; i < vectorSize; i++)
     {
+        MessageId messageId = *reinterpret_cast<const MessageId*>(ptr);
+        ptr += sizeof(MessageId);
+
         uint64_t recordsTime = *reinterpret_cast<const uint64_t*>(ptr);
         ptr += sizeof(uint64_t);
 
@@ -458,7 +463,7 @@ inline std::vector<ChatRoomRecord> parseChatRoomRecordPacket(const uint8_t* buff
 
         UserId userId = *reinterpret_cast<const UserId*>(ptr);
         ptr += sizeof(UserId);
-        records.emplace_back(recordsTime, userId, message);
+        records.emplace_back(messageId, recordsTime, userId, message);
     }
 
     return records;

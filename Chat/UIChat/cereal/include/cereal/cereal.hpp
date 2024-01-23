@@ -152,18 +152,18 @@ namespace cereal
   }
 
   // ######################################################################
-  //! Called before a type is serialized to set up any special archive state
-  //! for processing some type
+  //! Called before a packetType is serialized to set up any special archive state
+  //! for processing some packetType
   /*! If designing a serializer that needs to set up any kind of special
-      state or output extra information for a type, specialize this function
-      for the archive type and the types that require the extra information.
+      state or output extra information for a packetType, specialize this function
+      for the archive packetType and the types that require the extra information.
       @ingroup Internal */
   template <class Archive, class T> inline
   void prologue( Archive & /* archive */, T const & /* data */)
   { }
 
-  //! Called after a type is serialized to tear down any special archive state
-  //! for processing some type
+  //! Called after a packetType is serialized to tear down any special archive state
+  //! for processing some packetType
   /*! @ingroup Internal */
   template <class Archive, class T> inline
   void epilogue( Archive & /* archive */, T const & /* data */)
@@ -185,7 +185,7 @@ namespace cereal
   enum Flags { AllowEmptyClassElision = 1 };
 
   // ######################################################################
-  //! Registers a specific Archive type with cereal
+  //! Registers a specific Archive packetType with cereal
   /*! This registration should be done once per archive.  A good place to
       put this is immediately following the definition of your archive.
       Archive registration is only strictly necessary if you wish to
@@ -208,7 +208,7 @@ namespace cereal
   #endif
 
   // ######################################################################
-  //! Defines a class version for some type
+  //! Defines a class version for some packetType
   /*! Versioning information is optional and adds some small amount of
       overhead to serialization.  This overhead will occur both in terms of
       space in the archive (the version information for each class will be
@@ -216,12 +216,12 @@ namespace cereal
       must check to see if they need to load or store version information).
 
       Versioning is useful if you plan on fundamentally changing the way some
-      type is serialized in the future.  Versioned serialization functions
+      packetType is serialized in the future.  Versioned serialization functions
       cannot be used to load non-versioned data.
 
       By default, all types have an assumed version value of zero.  By
       using this macro, you may change the version number associated with
-      some type.  cereal will then use this value as a second parameter
+      some packetType.  cereal will then use this value as a second parameter
       to your serialization functions.
 
       The interface for the serialization functions is nearly identical
@@ -310,7 +310,7 @@ namespace cereal
       epilogue functions together with specializations of serialize, save,
       and load to alter the functionality of their serialization.
 
-      @tparam ArchiveType The archive type that derives from OutputArchive
+      @tparam ArchiveType The archive packetType that derives from OutputArchive
       @tparam Flags Flags to control advanced functionality.  See the Flags
                     enum for more information.
       @ingroup Internal */
@@ -414,14 +414,14 @@ namespace cereal
           return id->second;
       }
 
-      //! Registers a polymorphic type name with the archive
+      //! Registers a polymorphic packetType name with the archive
       /*! This function is used to track polymorphic types to prevent
           unnecessary saves of identifying strings used by the polymorphic
           support functionality.
 
           @internal
-          @param name The name to associate with a polymorphic type
-          @return A key that uniquely identifies the polymorphic type name */
+          @param name The name to associate with a polymorphic packetType
+          @return A key that uniquely identifies the polymorphic packetType name */
       inline std::uint32_t registerPolymorphicType( char const * name )
       {
         auto id = itsPolymorphicTypeMap.find( name );
@@ -492,7 +492,7 @@ namespace cereal
             Has the requested serialization function
             Does not have version and unversioned at the same time
             Is output serializable AND
-              is specialized for this type of function OR
+              is specialized for this packetType of function OR
               has no specialization at all */
       #define PROCESS_IF(name)                                                             \
       traits::EnableIf<traits::has_##name<T, ArchiveType>::value,                          \
@@ -568,7 +568,7 @@ namespace cereal
       ArchiveType & processImpl(T const &)
       {
         static_assert(traits::detail::count_output_serializers<T, ArchiveType>::value != 0,
-            "cereal could not find any output serialization functions for the provided type and archive combination. \n\n "
+            "cereal could not find any output serialization functions for the provided packetType and archive combination. \n\n "
             "Types must either have a serialize function, load/save pair, or load_minimal/save_minimal pair (you may not mix these). \n "
             "Serialize functions generally have the following signature: \n\n "
             "template<class Archive> \n "
@@ -578,7 +578,7 @@ namespace cereal
             "  } \n\n " );
 
         static_assert(traits::detail::count_output_serializers<T, ArchiveType>::value < 2,
-            "cereal found more than one compatible output serialization function for the provided type and archive combination. \n\n "
+            "cereal found more than one compatible output serialization function for the provided packetType and archive combination. \n\n "
             "Types must either have a serialize function, load/save pair, or load_minimal/save_minimal pair (you may not mix these). \n "
             "Use specialization (see access.hpp) if you need to disambiguate between serialize vs load/save functions.  \n "
             "Note that serialization functions can be inherited which may lead to the aforementioned ambiguities. \n "
@@ -591,7 +591,7 @@ namespace cereal
       /*! If this is the first time this class has been serialized, we will record its
           version number and serialize that.
 
-          @tparam T The type of the class being serialized */
+          @tparam T The packetType of the class being serialized */
       template <class T> inline
       std::uint32_t registerClassVersion()
       {
@@ -679,10 +679,10 @@ namespace cereal
       //! The id to be given to the next pointer
       std::uint32_t itsCurrentPointerId;
 
-      //! Maps from polymorphic type name strings to ids
+      //! Maps from polymorphic packetType name strings to ids
       std::unordered_map<char const *, std::uint32_t> itsPolymorphicTypeMap;
 
-      //! The id to be given to the next polymorphic type name
+      //! The id to be given to the next polymorphic packetType name
       std::uint32_t itsCurrentPolymorphicTypeId;
 
       //! Keeps track of classes that have versioning information associated with them
@@ -702,7 +702,7 @@ namespace cereal
       epilogue functions together with specializations of serialize, save,
       and load to alter the functionality of their serialization.
 
-      @tparam ArchiveType The archive type that derives from InputArchive
+      @tparam ArchiveType The archive packetType that derives from InputArchive
       @tparam Flags Flags to control advanced functionality.  See the Flags
                     enum for more information.
       @ingroup Internal */
@@ -814,29 +814,29 @@ namespace cereal
         itsSharedPointerMap[stripped_id] = ptr;
       }
 
-      //! Retrieves the string for a polymorphic type given a unique key for it
+      //! Retrieves the string for a polymorphic packetType given a unique key for it
       /*! This is used to retrieve a string previously registered during
           a polymorphic load.
 
           @internal
-          @param id The unique id that was serialized for the polymorphic type
+          @param id The unique id that was serialized for the polymorphic packetType
           @return The string identifier for the tyep */
       inline std::string getPolymorphicName(std::uint32_t const id)
       {
         auto name = itsPolymorphicTypeMap.find( id );
         if(name == itsPolymorphicTypeMap.end())
         {
-          throw Exception("Error while trying to deserialize a polymorphic pointer. Could not find type id " + std::to_string(id));
+          throw Exception("Error while trying to deserialize a polymorphic pointer. Could not find packetType id " + std::to_string(id));
         }
         return name->second;
       }
 
       //! Registers a polymorphic name string to its unique identifier
-      /*! After a polymorphic type has been loaded for the first time, it should
+      /*! After a polymorphic packetType has been loaded for the first time, it should
           be registered with its loaded id for future references to it.
 
           @internal
-          @param id The unique identifier for the polymorphic type
+          @param id The unique identifier for the polymorphic packetType
           @param name The name associated with the tyep */
       inline void registerPolymorphicName(std::uint32_t const id, std::string const & name)
       {
@@ -901,7 +901,7 @@ namespace cereal
             Has the requested serialization function
             Does not have version and unversioned at the same time
             Is input serializable AND
-              is specialized for this type of function OR
+              is specialized for this packetType of function OR
               has no specialization at all */
       #define PROCESS_IF(name)                                                              \
       traits::EnableIf<traits::has_##name<T, ArchiveType>::value,                           \
@@ -983,7 +983,7 @@ namespace cereal
       ArchiveType & processImpl(T const &)
       {
         static_assert(traits::detail::count_input_serializers<T, ArchiveType>::value != 0,
-            "cereal could not find any input serialization functions for the provided type and archive combination. \n\n "
+            "cereal could not find any input serialization functions for the provided packetType and archive combination. \n\n "
             "Types must either have a serialize function, load/save pair, or load_minimal/save_minimal pair (you may not mix these). \n "
             "Serialize functions generally have the following signature: \n\n "
             "template<class Archive> \n "
@@ -993,7 +993,7 @@ namespace cereal
             "  } \n\n " );
 
         static_assert(traits::detail::count_input_serializers<T, ArchiveType>::value < 2,
-            "cereal found more than one compatible input serialization function for the provided type and archive combination. \n\n "
+            "cereal found more than one compatible input serialization function for the provided packetType and archive combination. \n\n "
             "Types must either have a serialize function, load/save pair, or load_minimal/save_minimal pair (you may not mix these). \n "
             "Use specialization (see access.hpp) if you need to disambiguate between serialize vs load/save functions.  \n "
             "Note that serialization functions can be inherited which may lead to the aforementioned ambiguities. \n "
@@ -1009,7 +1009,7 @@ namespace cereal
       /*! If this is the first time this class has been serialized, we will record its
           version number and serialize that.
 
-          @tparam T The type of the class being serialized */
+          @tparam T The packetType of the class being serialized */
       template <class T> inline
       std::uint32_t loadClassVersion()
       {
@@ -1109,7 +1109,7 @@ namespace cereal
       //! Maps from name ids to names
       std::unordered_map<std::uint32_t, std::string> itsPolymorphicTypeMap;
 
-      //! Maps from type hash codes to version numbers
+      //! Maps from packetType hash codes to version numbers
       std::unordered_map<std::size_t, std::uint32_t> itsVersionedTypes;
   }; // class InputArchive
 } // namespace cereal

@@ -15,6 +15,7 @@ struct Query{
 
     bool prepare(const std::string& sqlQuery)
     {
+        qDebug() << "SQLQuery prepare: " << sqlQuery;
         if (!m_query.prepare(QString::fromStdString(sqlQuery)))
         {
             qCritical() << "Prepare query ERROR: " << m_query.lastError().text();
@@ -89,6 +90,7 @@ public:
             qDebug() << m_db.lastError().text();
         }
 
+        createChatRoomCatalogue();
         //fillTestData();
     }
 
@@ -151,6 +153,7 @@ public:
                                    (\
                                         chatRoomId INTEGER PRIMARY KEY AUTOINCREMENT, \
                                         chatRoomName TEXT,\
+                                        chatRoomTableName TEXT,\
                                         ownerPublicKey TEXT VARCHAR(32),\
                                         isPrivate INT\
                                    );");
@@ -260,7 +263,7 @@ public:
             std::string message = query.value(1).toString().toStdString();
             int senderId = query.value(2).toInt();
             int time = query.value(3).toInt();
-            records.emplace_back(time, senderId, message);
+            records.emplace_back(id, time, senderId, message);
         }
         func(records);
     }
@@ -317,7 +320,7 @@ public:
 //            qDebug() << query.value(0).toString();
 //            qDebug() << query.value(1).toString();
 //        }
-        createChatRoomCatalogue();
+
         //getUserId({});
         //createChatRoomTable("Room1");
 //        createChatRoomTable("Room2");

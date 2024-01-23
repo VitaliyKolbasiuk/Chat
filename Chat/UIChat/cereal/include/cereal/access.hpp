@@ -63,14 +63,14 @@ namespace cereal
         }
       };
 
-      // Provide a specialization for LoadAndConstruct for your type
+      // Provide a specialization for LoadAndConstruct for your packetType
       namespace cereal
       {
         template <> struct LoadAndConstruct<MyType>
         {
           // load_and_construct will be passed the archive that you will be loading
           // from as well as a construct object which you can use as if it were the
-          // constructor for your type.  cereal will handle all memory management for you.
+          // constructor for your packetType.  cereal will handle all memory management for you.
           template <class Archive>
           static void load_and_construct( Archive & ar, cereal::construct<MyType> & construct )
           {
@@ -102,7 +102,7 @@ namespace cereal
 
       Versioning behaves the same way as it does for standard serialization functions.
 
-      @tparam T The type to specialize for
+      @tparam T The packetType to specialize for
       @ingroup Access */
   template <class T>
   struct LoadAndConstruct
@@ -115,7 +115,7 @@ namespace cereal
   //! @endcond
 
   //! Used to construct types with no default constructor
-  /*! When serializing a type that has no default constructor, cereal
+  /*! When serializing a packetType that has no default constructor, cereal
       will attempt to call either the class static function load_and_construct
       or the appropriate template specialization of LoadAndConstruct.  cereal
       will pass that function a reference to the archive as well as a reference
@@ -158,14 +158,14 @@ namespace cereal
       };
       @endcode
 
-      @tparam T The class type being serialized
+      @tparam T The class packetType being serialized
       */
   template <class T>
   class construct
   {
     public:
-      //! Construct and initialize the type T with the given arguments
-      /*! This will forward all arguments to the underlying type T,
+      //! Construct and initialize the packetType T with the given arguments
+      /*! This will forward all arguments to the underlying packetType T,
           calling an appropriate constructor.
 
           Calling this function more than once will result in an exception
@@ -197,7 +197,7 @@ namespace cereal
           It is strongly recommended to avoid using this function in
           any other circumstance.
 
-          @return A raw pointer to the initialized type */
+          @return A raw pointer to the initialized packetType */
       T * ptr()
       {
         return operator->();

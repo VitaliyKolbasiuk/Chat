@@ -37,9 +37,9 @@ void MainWindow::init()
             exit(0);
         }
     }
-    m_chatClient = std::make_shared<QChatClient>(*m_settings);
+    m_chatClient = std::make_shared<ChatClient>(*m_settings);
 
-    connect(m_chatClient.get(), &QChatClient::OnMessageReceived, this, [this](ChatRoomId chatRoomId, const std::string& username, const std::string& message, uint64_t time){
+    connect(m_chatClient.get(), &ChatClient::OnMessageReceived, this, [this](ChatRoomId chatRoomId, MessageId messageId, const std::string& username, const std::string& message, uint64_t time){
         int year, month, day, hour, minute, second;
         parseUtcTime(time, year, month, day, hour, minute, second);
 
@@ -51,8 +51,7 @@ void MainWindow::init()
 
                 QListWidgetItem *newItem = new QListWidgetItem;
                 QTextBrowser *textBrowser = new QTextBrowser;
-                QVariant messageId(ui->m_chatRoomArea->count() + 1);
-                newItem->setData(Qt::UserRole, messageId);
+                newItem->setData(Qt::UserRole, messageId.m_id);
 
                 QString htmlText = QString::fromStdString(username) + "<br>" +
                                    QString::fromStdString(message) + "<br>" +
@@ -71,7 +70,7 @@ void MainWindow::init()
         }
     });
 
-    connect(m_chatClient.get(), &QChatClient::OnChatRoomAddedOrDeleted, this, [this](const ChatRoomId& chatRoomId, const std::string& chatRoomName, bool isAdd){
+    connect(m_chatClient.get(), &ChatClient::OnChatRoomAddedOrDeleted, this, [this](const ChatRoomId& chatRoomId, const std::string& chatRoomName, bool isAdd){
         QListWidgetItem *newItem = new QListWidgetItem;
         QVariant id(chatRoomId.m_id);
         newItem->setData(Qt::UserRole, id);
@@ -98,7 +97,7 @@ void MainWindow::init()
         }
     });
 
-    connect(m_chatClient.get(), &QChatClient::OnTableChanged, this, [this](const ChatRoomMap& chatRoomInfoList){
+    connect(m_chatClient.get(), &ChatClient::OnTableChanged, this, [this](const ChatRoomMap& chatRoomInfoList){
         ui->m_chatRoomList->clear();
         for (const auto& [key, chatRoomInfo] : chatRoomInfoList)
         {
@@ -116,6 +115,10 @@ void MainWindow::init()
             QVariant data = item->data(Qt::UserRole);
             int chatRoomId = data.toInt();
         }
+    });
+
+    connect(m_chatClient.get(), &ChatClient::updateChatRoomList, this, [this](ChatRoomId chatRoomId){
+        doUpdateChatRoomList(chatRoomId);
     });
 
     //qDebug() << QDir::homePath();
@@ -222,5 +225,43 @@ void MainWindow::on_m_CreateRoom_released()
     CreateChatRoom createChatRoom(*m_chatClient, nullptr);
     createChatRoom.setModal(true);
     createChatRoom.exec();
+}
+
+void MainWindow::doUpdateChatRoomList(ChatRoomId chatRoomId)
+{
+    auto* currentItem =  ui->m_chatRoomList->currentItem();
+    if (currentItem == nullptr)
+    {
+        return;
+    }
+
+    int currentChatRoomId = currentItem->data(Qt::UserRole).toInt();
+    if (currentChatRoomId != chatRoomId.m_id)
+    {
+        return;
+    }
+
+    auto& chatRoomData = m_chatClient->getChatRoomMap()[chatRoomId];
+
+    for (const auto& [key, record] : chatRoomData.m_records)
+    {
+        QListWidgetItem *newItem = new QListWidgetItem;
+        QTextBrowser *textBrowser = new QTextBrowser;
+        newItem->setData(Qt::UserRole, record.m_messageId.m_id);
+
+        int year, month, day, hour, minute, second;
+        parseUtcTime(record.m_time, year, month, day, hour, minute, second);
+
+        QString htmlText = QString::fromStdString(" ") + "<br>" +
+                           QString::fromStdString(record.m_text) + "<br>" +
+                           QString::fromStdString(std::to_string(hour)) + ':' +
+                           QString::fromStdString(std::to_string(minute));
+
+        textBrowser->setHtml(htmlText);
+        newItem->setSizeHint(textBrowser->sizeHint());
+
+        ui->m_chatRoomArea->insertItem(0, newItem);
+        ui->m_chatRoomArea->setItemWidget(newItem, textBrowser);
+    }
 }
 

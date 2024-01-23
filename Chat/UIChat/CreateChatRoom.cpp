@@ -4,7 +4,7 @@
 
 #include <QMessageBox>
 
-CreateChatRoom::CreateChatRoom(QChatClient& chatClient, QWidget *parent) :
+CreateChatRoom::CreateChatRoom(ChatClient& chatClient, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::CreateChatRoom),
     m_chatClient(chatClient)

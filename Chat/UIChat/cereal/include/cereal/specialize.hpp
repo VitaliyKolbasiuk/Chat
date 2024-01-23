@@ -53,13 +53,13 @@ namespace cereal
   //! A class used to disambiguate cases where cereal cannot detect a unique way of serializing a class
   /*! cereal attempts to figure out which method of serialization (member vs. non-member serialize
       or load/save pair) at compile time.  If for some reason cereal cannot find a non-ambiguous way
-      of serializing a type, it will produce a static assertion complaining about this.
+      of serializing a packetType, it will produce a static assertion complaining about this.
 
       This can happen because you have both a serialize and load/save pair, or even because a base
       class has a serialize (public or private with friend access) and a derived class does not
-      overwrite this due to choosing some other serialization type.
+      overwrite this due to choosing some other serialization packetType.
 
-      Specializing this class will tell cereal to explicitly use the serialization type you specify
+      Specializing this class will tell cereal to explicitly use the serialization packetType you specify
       and it will not complain about ambiguity in its compile time selection.  However, if cereal detects
       an ambiguity in specializations, it will continue to issue a static assertion.
 
@@ -93,22 +93,22 @@ namespace cereal
         // This struct specialization will tell cereal which is the right way to serialize the ambiguity
         template <class Archive> struct specialize<Archive, MyDerived, cereal::specialization::member_load_save> {};
 
-        // If we only had a disambiguation for a specific archive type, it would look something like this
+        // If we only had a disambiguation for a specific archive packetType, it would look something like this
         template <> struct specialize<cereal::BinaryOutputArchive, MyDerived, cereal::specialization::member_load_save> {};
       }
       @endcode
 
       You can also choose to use the macros CEREAL_SPECIALIZE_FOR_ALL_ARCHIVES or
-      CEREAL_SPECIALIZE_FOR_ARCHIVE if you want to type a little bit less.
+      CEREAL_SPECIALIZE_FOR_ARCHIVE if you want to packetType a little bit less.
 
-      @tparam T The type to specialize the serialization for
-      @tparam S The specialization type to use for T
+      @tparam T The packetType to specialize the serialization for
+      @tparam S The specialization packetType to use for T
       @ingroup Access */
   template <class Archive, class T, specialization S>
   struct specialize : public std::false_type {};
 
   //! Convenient macro for performing specialization for all archive types
-  /*! This performs specialization for the specific type for all types of archives.
+  /*! This performs specialization for the specific packetType for all types of archives.
       This macro should be placed at the global namespace.
 
       @code{cpp}
@@ -121,8 +121,8 @@ namespace cereal
   #define CEREAL_SPECIALIZE_FOR_ALL_ARCHIVES( Type, Specialization )                                \
   namespace cereal { template <class Archive> struct specialize<Archive, Type, Specialization> {}; }
 
-  //! Convenient macro for performing specialization for a single archive type
-  /*! This performs specialization for the specific type for a single type of archive.
+  //! Convenient macro for performing specialization for a single archive packetType
+  /*! This performs specialization for the specific packetType for a single type of archive.
       This macro should be placed at the global namespace.
 
       @code{cpp}

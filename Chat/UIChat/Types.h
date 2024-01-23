@@ -52,6 +52,7 @@ struct ChatRoomInfo{
 using ChatRoomInfoList = std::vector<ChatRoomInfo>;
 
 struct ChatRoomRecord{
+    MessageId    m_messageId;
     std::time_t  m_time;
     UserId       m_userId;
     std::string  m_text;

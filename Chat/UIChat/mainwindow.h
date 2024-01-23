@@ -21,6 +21,9 @@ public:
     ~MainWindow();
     void init();
 
+private:
+    void doUpdateChatRoomList(ChatRoomId chatRoomId);
+
 private slots:
 
     void on_Join_released();
@@ -38,7 +41,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
-    std::shared_ptr<QChatClient> m_chatClient;
+    std::shared_ptr<ChatClient> m_chatClient;
     io_context m_ioContext1;
     std::shared_ptr<TcpClient>  m_tcpClient;
 

@@ -58,11 +58,11 @@ namespace cereal
   }
 
   //! Casts a derived class to its non-virtual base class in a way that safely supports abstract classes
-  /*! This should be used in cases when a derived type needs to serialize its base type. This is better than directly
+  /*! This should be used in cases when a derived type needs to serialize its base packetType. This is better than directly
       using static_cast, as it allows for serialization of pure virtual (abstract) base classes.
 
       This also automatically registers polymorphic relation between the base and derived class, assuming they
-      are indeed polymorphic. Note this is not the same as polymorphic type registration. For more information
+      are indeed polymorphic. Note this is not the same as polymorphic packetType registration. For more information
       see the documentation on polymorphism. If using a polymorphic class, be sure to include support for
       polymorphism (cereal/types/polymorphic.hpp).
 
@@ -111,8 +111,8 @@ namespace cereal
     };
 
   //! Casts a derived class to its virtual base class in a way that allows cereal to track inheritance
-  /*! This should be used in cases when a derived type features virtual inheritance from some
-      base type.  This allows cereal to track the inheritance and to avoid making duplicate copies
+  /*! This should be used in cases when a derived packetType features virtual inheritance from some
+      base packetType.  This allows cereal to track the inheritance and to avoid making duplicate copies
       during serialization.
 
       It is safe to use virtual_base_class in all circumstances for serializing base classes, even in cases
@@ -120,7 +120,7 @@ namespace cereal
       cereal::base_class<> if you do not need to worry about virtual inheritance.
 
       This also automatically registers polymorphic relation between the base and derived class, assuming they
-      are indeed polymorphic. Note this is not the same as polymorphic type registration. For more information
+      are indeed polymorphic. Note this is not the same as polymorphic packetType registration. For more information
       see the documentation on polymorphism. If using a polymorphic class, be sure to include support for
       polymorphism (cereal/types/polymorphic.hpp).
 

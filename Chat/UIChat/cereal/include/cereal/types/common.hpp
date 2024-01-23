@@ -55,24 +55,24 @@ namespace cereal
 
     namespace
     {
-      //! Gets the underlying type of an enum
+      //! Gets the underlying packetType of an enum
       /*! @internal */
       template <class T, bool IsEnum>
       struct enum_underlying_type : std::false_type {};
 
-      //! Gets the underlying type of an enum
+      //! Gets the underlying packetType of an enum
       /*! Specialization for when we actually have an enum
           @internal */
       template <class T>
       struct enum_underlying_type<T, true> { using type = typename std::underlying_type<T>::type; };
     } // anon namespace
 
-    //! Checks if a type is an enum
-    /*! This is needed over simply calling std::is_enum because the type
+    //! Checks if a packetType is an enum
+    /*! This is needed over simply calling std::is_enum because the packetType
         traits checking at compile time will attempt to call something like
-        load_minimal with a special NoConvertRef struct that wraps up the true type.
+        load_minimal with a special NoConvertRef struct that wraps up the true packetType.
 
-        This will strip away any of that and also expose the true underlying type.
+        This will strip away any of that and also expose the true underlying packetType.
         @internal */
     template <class T>
     class is_enum

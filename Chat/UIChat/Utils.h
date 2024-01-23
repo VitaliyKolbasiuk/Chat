@@ -36,7 +36,7 @@ std::array<uint8_t, N> parseHexString(const std::string& hexString) {
 
     // Ensure that the hex string has an even number of characters
     if (hexString.length() % 2 != 0) {
-        std::cout << "Invalid hex string length." << std::endl;
+        std::cout << "Invalid hex string packetLength." << std::endl;
         return byteArr;
     }
 

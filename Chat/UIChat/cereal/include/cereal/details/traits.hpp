@@ -1,5 +1,5 @@
 /*! \file traits.hpp
-    \brief Internal type trait support
+    \brief Internal packetType trait support
     \ingroup Internal */
 /*
   Copyright (c) 2014, Randolph Voorhies, Shane Grant
@@ -62,7 +62,7 @@ namespace cereal
       template<typename> struct Void { typedef void type; };
       #endif // CEREAL_OLDER_GCC
 
-      //! Return type for SFINAE Enablers
+      //! Return packetType for SFINAE Enablers
       enum class sfinae {};
 
       // ######################################################################
@@ -180,7 +180,7 @@ namespace cereal
     // ######################################################################
     //! Creates a test for whether a non const member function exists
     /*! This creates a class derived from std::integral_constant that will be true if
-        the type has the proper member function for the given archive.
+        the packetType has the proper member function for the given archive.
 
         @param name The name of the function to test for (e.g. serialize, load, save)
         @param test_name The name to give the test for the function being tested for (e.g. serialize, versioned_serialize)
@@ -213,7 +213,7 @@ namespace cereal
     // ######################################################################
     //! Creates a test for whether a non const non-member function exists
     /*! This creates a class derived from std::integral_constant that will be true if
-        the type has the proper non-member function for the given archive. */
+        the packetType has the proper non-member function for the given archive. */
     #define CEREAL_MAKE_HAS_NON_MEMBER_TEST(test_name, func, versioned)                                                         \
     namespace detail                                                                                                            \
     {                                                                                                                           \
@@ -269,7 +269,7 @@ namespace cereal
     // ######################################################################
     //! Creates a test for whether a member save function exists
     /*! This creates a class derived from std::integral_constant that will be true if
-        the type has the proper member function for the given archive.
+        the packetType has the proper member function for the given archive.
 
         @param test_name The name to give the test (e.g. save or versioned_save)
         @param versioned Either blank or the macro CEREAL_MAKE_VERSIONED_TEST */
@@ -351,7 +351,7 @@ namespace cereal
     // ######################################################################
     //! Creates a test for whether a non-member save function exists
     /*! This creates a class derived from std::integral_constant that will be true if
-        the type has the proper non-member function for the given archive.
+        the packetType has the proper non-member function for the given archive.
 
         @param test_name The name to give the test (e.g. save or versioned_save)
         @param versioned Either blank or the macro CEREAL_MAKE_VERSIONED_TEST */
@@ -382,7 +382,7 @@ namespace cereal
     {                                                                                                                        \
       using check = typename detail::has_non_member_##test_name##_impl<T, A>;                                                \
       static_assert( check::value || !check::not_const_type,                                                                 \
-        "cereal detected a non-const type parameter in non-member " #test_name ". \n "                                       \
+        "cereal detected a non-const packetType parameter in non-member " #test_name ". \n "                                       \
         #test_name " non-member functions must always pass their types as const" );                                          \
     };
 
@@ -416,7 +416,7 @@ namespace cereal
     // ######################################################################
     //! Creates implementation details for whether a member save_minimal function exists
     /*! This creates a class derived from std::integral_constant that will be true if
-        the type has the proper member function for the given archive.
+        the packetType has the proper member function for the given archive.
 
         @param test_name The name to give the test (e.g. save_minimal or versioned_save_minimal)
         @param versioned Either blank or the macro CEREAL_MAKE_VERSIONED_TEST */
@@ -473,9 +473,9 @@ namespace cereal
 
     // ######################################################################
     //! Creates helpers for minimal save functions
-    /*! The get_member_*_type structs allow access to the return type of a save_minimal,
+    /*! The get_member_*_type structs allow access to the return packetType of a save_minimal,
         assuming that the function actually exists.  If the function does not
-        exist, the type will be void.
+        exist, the packetType will be void.
 
         @param test_name The name to give the test (e.g. save_minimal or versioned_save_minimal)
         @param versioned Either blank or the macro CEREAL_MAKE_VERSIONED_TEST */
@@ -496,7 +496,7 @@ namespace cereal
     // ######################################################################
     //! Creates a test for whether a member save_minimal function exists
     /*! This creates a class derived from std::integral_constant that will be true if
-        the type has the proper member function for the given archive.
+        the packetType has the proper member function for the given archive.
 
         @param test_name The name to give the test (e.g. save_minimal or versioned_save_minimal) */
     #define CEREAL_MAKE_HAS_MEMBER_SAVE_MINIMAL_TEST(test_name)                                                      \
@@ -510,8 +510,8 @@ namespace cereal
                                                                                                                      \
       using type = typename detail::get_member_##test_name##_type<T, A, check::value>::type;                         \
       static_assert( (check::value && is_minimal_type<type>::value) || !check::value,                                \
-        "cereal detected a member " #test_name " with an invalid return type. \n "                                   \
-        "return type must be arithmetic or string" );                                                                \
+        "cereal detected a member " #test_name " with an invalid return packetType. \n "                                   \
+        "return packetType must be arithmetic or string" );                                                                \
     };
 
     // ######################################################################
@@ -534,7 +534,7 @@ namespace cereal
     // ######################################################################
     //! Creates a test for whether a non-member save_minimal function exists
     /*! This creates a class derived from std::integral_constant that will be true if
-        the type has the proper member function for the given archive.
+        the packetType has the proper member function for the given archive.
 
         @param test_name The name to give the test (e.g. save_minimal or versioned_save_minimal)
         @param versioned Either blank or the macro CEREAL_MAKE_VERSIONED_TEST */
@@ -577,13 +577,13 @@ namespace cereal
     {                                                                                                                        \
       using check = typename detail::has_non_member_##test_name##_impl<T, A>;                                                \
       static_assert( check::valid,                                                                                           \
-        "cereal detected a non-const type parameter in non-member " #test_name ". \n "                                       \
+        "cereal detected a non-const packetType parameter in non-member " #test_name ". \n "                                       \
         #test_name " non-member functions must always pass their types as const" );                                          \
                                                                                                                              \
       using type = typename detail::get_non_member_##test_name##_type<T, A, check::value>::type;                             \
       static_assert( (check::value && is_minimal_type<type>::value) || !check::value,                                        \
-        "cereal detected a non-member " #test_name " with an invalid return type. \n "                                       \
-        "return type must be arithmetic or string" );                                                                        \
+        "cereal detected a non-member " #test_name " with an invalid return packetType. \n "                                       \
+        "return packetType must be arithmetic or string" );                                                                        \
     };
 
     // ######################################################################
@@ -603,21 +603,21 @@ namespace cereal
     {
       //! Used to help strip away conversion wrappers
       /*! If someone writes a non-member load/save minimal function that accepts its
-          parameter as some generic template type and needs to perform trait checks
-          on that type, our NoConvert wrappers will interfere with this.  Using
+          parameter as some generic template packetType and needs to perform trait checks
+          on that packetType, our NoConvert wrappers will interfere with this.  Using
           the struct strip_minmal, users can strip away our wrappers to get to
-          the underlying type, allowing traits to work properly */
+          the underlying packetType, allowing traits to work properly */
       struct NoConvertBase {};
 
       //! A struct that prevents implicit conversion
-      /*! Any type instantiated with this struct will be unable to implicitly convert
-          to another type.  Is designed to only allow conversion to Source const &.
+      /*! Any packetType instantiated with this struct will be unable to implicitly convert
+          to another packetType.  Is designed to only allow conversion to Source const &.
 
-          @tparam Source the type of the original source */
+          @tparam Source the packetType of the original source */
       template <class Source>
       struct NoConvertConstRef : NoConvertBase
       {
-        using type = Source; //!< Used to get underlying type easily
+        using type = Source; //!< Used to get underlying packetType easily
 
         template <class Dest, class = typename std::enable_if<std::is_same<Source, Dest>::value>::type>
         operator Dest () = delete;
@@ -628,14 +628,14 @@ namespace cereal
       };
 
       //! A struct that prevents implicit conversion
-      /*! Any type instantiated with this struct will be unable to implicitly convert
-          to another type.  Is designed to only allow conversion to Source &.
+      /*! Any packetType instantiated with this struct will be unable to implicitly convert
+          to another packetType.  Is designed to only allow conversion to Source &.
 
-          @tparam Source the type of the original source */
+          @tparam Source the packetType of the original source */
       template <class Source>
       struct NoConvertRef : NoConvertBase
       {
-        using type = Source; //!< Used to get underlying type easily
+        using type = Source; //!< Used to get underlying packetType easily
 
         template <class Dest, class = typename std::enable_if<std::is_same<Source, Dest>::value>::type>
         operator Dest () = delete;
@@ -650,7 +650,7 @@ namespace cereal
         operator Dest & ();
       };
 
-      //! A type that can implicitly convert to anything else
+      //! A packetType that can implicitly convert to anything else
       struct AnyConvert
       {
         template <class Dest>
@@ -664,7 +664,7 @@ namespace cereal
     // ######################################################################
     //! Creates a test for whether a member load_minimal function exists
     /*! This creates a class derived from std::integral_constant that will be true if
-        the type has the proper member function for the given archive.
+        the packetType has the proper member function for the given archive.
 
         Our strategy here is to first check if a function matching the signature more or less exists
         (allow anything like load_minimal(xxx) using AnyConvert, and then secondly enforce
@@ -719,7 +719,7 @@ namespace cereal
     // ######################################################################
     //! Creates helpers for minimal load functions
     /*! The has_member_*_wrapper structs ensure that the load and save types for the
-        requested function type match appropriately.
+        requested function packetType match appropriately.
 
         @param load_test_name The name to give the test (e.g. load_minimal or versioned_load_minimal)
         @param save_test_name The name to give the test (e.g. save_minimal or versioned_save_minimal,
@@ -749,7 +749,7 @@ namespace cereal
                                                                                                                           \
         static_assert( valid || !value, "cereal detected different or invalid types in corresponding member "             \
             #load_test_name " and " #save_test_name " functions. \n "                                                     \
-            "the paramater to " #load_test_name " must be a constant reference to the type that "                         \
+            "the paramater to " #load_test_name " must be a constant reference to the packetType that "                         \
             #save_test_name " returns." );                                                                                \
       };                                                                                                                  \
     } /* end namespace detail */
@@ -757,7 +757,7 @@ namespace cereal
     // ######################################################################
     //! Creates a test for whether a member load_minimal function exists
     /*! This creates a class derived from std::integral_constant that will be true if
-        the type has the proper member function for the given archive.
+        the packetType has the proper member function for the given archive.
 
         @param load_test_name The name to give the test (e.g. load_minimal or versioned_load_minimal)
         @param load_test_prefix The above parameter minus the trailing "_minimal" */
@@ -796,7 +796,7 @@ namespace cereal
     // ######################################################################
     //! Creates a test for whether a non-member load_minimal function exists
     /*! This creates a class derived from std::integral_constant that will be true if
-        the type has the proper member function for the given archive.
+        the packetType has the proper member function for the given archive.
 
         See notes from member load_minimal implementation.
 
@@ -806,8 +806,8 @@ namespace cereal
 
         @code
         static_assert( check::const_valid || !check::exists,
-            "cereal detected an invalid serialization type parameter in non-member " #test_name ".  "
-            #test_name " non-member functions must accept their serialization type by non-const reference" );
+            "cereal detected an invalid serialization packetType parameter in non-member " #test_name ".  "
+            #test_name " non-member functions must accept their serialization packetType by non-const reference" );
         @endcode
 
         See #132, #436, #263, and #565 on https://github.com/USCiLab/cereal for more details.
@@ -858,7 +858,7 @@ namespace cereal
                                                                                                                              \
         static_assert( check::valid || !check::exists, "cereal detected different types in corresponding non-member "        \
             #test_name " and " #save_name " functions. \n "                                                                  \
-            "the paramater to " #test_name " must be a constant reference to the type that " #save_name " returns." );       \
+            "the paramater to " #test_name " must be a constant reference to the packetType that " #save_name " returns." );       \
       };                                                                                                                     \
     } /* namespace detail */                                                                                                 \
                                                                                                                              \
@@ -906,7 +906,7 @@ namespace cereal
     // ######################################################################
     //! Creates a test for whether a non-member load_and_construct specialization exists
     /*! This creates a class derived from std::integral_constant that will be true if
-        the type has the proper non-member function for the given archive. */
+        the packetType has the proper non-member function for the given archive. */
     #define CEREAL_MAKE_HAS_NON_MEMBER_LOAD_AND_CONSTRUCT_TEST(test_name, versioned)                                            \
     namespace detail                                                                                                            \
     {                                                                                                                           \
@@ -1009,7 +1009,7 @@ namespace cereal
         is_specialized_non_member_load_save_minimal<T, A>::value> {};
     } // namespace detail
 
-    //! Check if any specialization exists for a type
+    //! Check if any specialization exists for a packetType
     template <class T, class A>
     struct is_specialized : std::integral_constant<bool,
       detail::is_specialized_member_serialize<T, A>::value ||
@@ -1019,12 +1019,12 @@ namespace cereal
       detail::is_specialized_non_member_load_save<T, A>::value ||
       detail::is_specialized_non_member_load_save_minimal<T, A>::value>
     {
-      static_assert(detail::count_specializations<T, A>::value <= 1, "More than one explicit specialization detected for type.");
+      static_assert(detail::count_specializations<T, A>::value <= 1, "More than one explicit specialization detected for packetType.");
     };
 
     //! Create the static assertion for some specialization
-    /*! This assertion will fail if the type is indeed specialized and does not have the appropriate
-        type of serialization functions */
+    /*! This assertion will fail if the packetType is indeed specialized and does not have the appropriate
+        packetType of serialization functions */
     #define CEREAL_MAKE_IS_SPECIALIZED_ASSERT(name, versioned_name, print_name, spec_name)                      \
     static_assert( (is_specialized<T, A>::value && detail::is_specialized_##spec_name<T, A>::value &&           \
                    (has_##name<T, A>::value || has_##versioned_name<T, A>::value))                              \
@@ -1032,8 +1032,8 @@ namespace cereal
                    "cereal detected " #print_name " specialization but no " #print_name " serialize function" )
 
     //! Generates a test for specialization for versioned and unversioned functions
-    /*! This creates checks that can be queried to see if a given type of serialization function
-        has been specialized for this type */
+    /*! This creates checks that can be queried to see if a given packetType of serialization function
+        has been specialized for this packetType */
     #define CEREAL_MAKE_IS_SPECIALIZED(name, versioned_name, spec_name)                     \
     template <class T, class A>                                                             \
     struct is_specialized_##name : std::integral_constant<bool,                             \
@@ -1163,7 +1163,7 @@ namespace cereal
 
     namespace detail
     {
-      //! Common base type for base class casting
+      //! Common base packetType for base class casting
       struct BaseCastBase {};
 
       template <class>
@@ -1188,7 +1188,7 @@ namespace cereal
     }
 
     //! Checks to see if the base class used in a cast has a minimal serialization
-    /*! @tparam Cast Either base_class or virtual_base_class wrapped type
+    /*! @tparam Cast Either base_class or virtual_base_class wrapped packetType
         @tparam Test A has_minimal test (for either input or output)
         @tparam Archive The archive to use with the test */
     template <class Cast, template<class, class> class Test, class Archive>
@@ -1216,23 +1216,23 @@ namespace cereal
     struct has_shared_from_this : decltype((detail::shared_from_this_wrapper::check)(std::declval<T>()))
     { };
 
-    //! Get the type of the base class of T which inherited from std::enable_shared_from_this
+    //! Get the packetType of the base class of T which inherited from std::enable_shared_from_this
     template <class T>
     struct get_shared_from_this_base
     {
       private:
         using PtrType = decltype(detail::shared_from_this_wrapper::get(std::declval<T>()));
       public:
-        //! The type of the base of T that inherited from std::enable_shared_from_this
+        //! The packetType of the base of T that inherited from std::enable_shared_from_this
         using type = typename std::decay<typename PtrType::element_type>::type;
     };
 
     // ######################################################################
-    //! Extracts the true type from something possibly wrapped in a cereal NoConvert
+    //! Extracts the true packetType from something possibly wrapped in a cereal NoConvert
     /*! Internally cereal uses some wrapper classes to test the validity of non-member
-        minimal load and save functions.  This can interfere with user type traits on
-        templated load and save minimal functions.  To get to the correct underlying type,
-        users should use strip_minimal when performing any enable_if type type trait checks.
+        minimal load and save functions.  This can interfere with user packetType traits on
+        templated load and save minimal functions.  To get to the correct underlying packetType,
+        users should use strip_minimal when performing any enable_if packetType type trait checks.
 
         See the enum serialization in types/common.hpp for an example of using this */
     template <class T, bool IsCerealMinimalTrait = std::is_base_of<detail::NoConvertBase, T>::value>
@@ -1276,7 +1276,7 @@ namespace cereal
       using decay_archive = typename std::decay<typename strip_minimal<A>::type>::type;
     }
 
-    //! Checks if the provided archive type is equal to some cereal archive type
+    //! Checks if the provided archive type is equal to some cereal archive packetType
     /*! This automatically does things such as std::decay and removing any other wrappers that may be
         on the Archive template parameter.
 
@@ -1294,10 +1294,10 @@ namespace cereal
     // ######################################################################
     //! A macro to use to restrict which types of archives your function will work for.
     /*! This requires you to have a template class parameter named Archive and replaces the void return
-        type for your function.
+        packetType for your function.
 
-        INTYPE refers to the input archive type you wish to restrict on.
-        OUTTYPE refers to the output archive type you wish to restrict on.
+        INTYPE refers to the input archive packetType you wish to restrict on.
+        OUTTYPE refers to the output archive packetType you wish to restrict on.
 
         For example, if we want to limit a serialize to only work with binary serialization:
 
@@ -1338,7 +1338,7 @@ namespace cereal
     struct Construct
     {
       static_assert( cereal::traits::detail::delay_static_assert<T>::value,
-        "cereal found more than one compatible load_and_construct function for the provided type and archive combination. \n\n "
+        "cereal found more than one compatible load_and_construct function for the provided packetType and archive combination. \n\n "
         "Types must either have a member load_and_construct function or a non-member specialization of LoadAndConstruct (you may not mix these). \n "
         "In addition, you may not mix versioned with non-versioned load_and_construct functions. \n\n " );
       static T * load_andor_construct( A & /*ar*/, construct<T> & /*construct*/ )

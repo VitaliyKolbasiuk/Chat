@@ -52,9 +52,9 @@ namespace cereal
   };
 
   // ######################################################################
-  //! The size type used by cereal
+  //! The size packetType used by cereal
   /*! To ensure compatability between 32, 64, etc bit machines, we need to use
-      a fixed size type instead of size_t, which may vary from machine to
+      a fixed size packetType instead of size_t, which may vary from machine to
       machine.
 
       The default value for CEREAL_SIZE_TYPE is specified in cereal/macros.hpp */
@@ -130,7 +130,7 @@ namespace cereal
       };
       @endcode
 
-      This third method is generally only used when providing generic type
+      This third method is generally only used when providing generic packetType
       support.  Users writing their own serialize functions will normally
       explicitly control whether they want to use NVPs or not.
 
@@ -196,7 +196,7 @@ namespace cereal
 
   //! Convenience for creating a templated NVP
   /*! For use in internal generic typing functions which have an
-      Archive type declared
+      Archive packetType declared
       @internal */
   #define CEREAL_NVP_(name, value) ::cereal::make_nvp<Archive>(name, value)
 
@@ -390,7 +390,7 @@ namespace cereal
   namespace detail
   {
     //! Tag for Version, which due to its anonymous namespace, becomes a different
-    //! type in each translation unit
+    //! packetType in each translation unit
     /*! This allows CEREAL_CLASS_VERSION to be safely called in a header file */
     namespace{ struct version_binding_tag {}; }
 

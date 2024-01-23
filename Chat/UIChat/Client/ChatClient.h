@@ -6,6 +6,8 @@
 #include <boost/tokenizer.hpp>
 #include <QObject>
 #include <ctime>
+#include <queue>
+#include <QTimer>
 
 #include "ClientInterfaces.h"
 #include "TcpClient.h"
@@ -26,29 +28,50 @@ struct ChatRoomData{
     ChatRoomData(const ChatRoomId& id, const std::string& name) : m_id(id), m_name(name) {}
 
     struct Record{
+        MessageId    m_messageId;
         std::time_t  m_time;
         UserId       m_userId;
         std::string  m_username;
         std::string  m_text;
+
+        bool operator< (const Record& record) const
+        {
+            return m_time < record.m_time;
+        }
     };
 
-    std::vector<Record> m_records;
+    std::map<int, Record> m_records;
+
+    void addRecords(const std::vector<ChatRoomRecord>& records)
+    {
+        for (const auto& record : records)
+        {
+            m_records[record.m_messageId.m_id] = {record.m_messageId, record.m_time, record.m_userId, {}, record.m_text};
+        }
+    }
+
+    void addMessage(const ChatRoomRecord& record)
+    {
+        m_records[record.m_messageId.m_id] = {record.m_messageId, record.m_time, record.m_userId, {}, record.m_text};
+    }
 };
 
 using ChatRoomMap = std::map<ChatRoomId, ChatRoomData>;
 
-class QChatClient : public QObject, public IChatClient
+class ChatClient : public QObject, public IChatClient
 {
    Q_OBJECT
 
 public:
 
 signals:
-    void OnMessageReceived(ChatRoomId chatRoomId, const std::string& username, const std::string& message, uint64_t time);
+    void OnMessageReceived(ChatRoomId chatRoomId, MessageId messageId, const std::string& username, const std::string& message, uint64_t time);
 
     void OnTableChanged(const ChatRoomMap& chatRoomInfoList);
 
     void OnChatRoomAddedOrDeleted(const ChatRoomId& chatRoomId, const std::string chatRoomName, bool isAdd);
+
+    void updateChatRoomList(ChatRoomId chatRoomId);
 
 private:
     std::weak_ptr<TcpClient>  m_tcpClient;
@@ -61,7 +84,7 @@ private:
 
 
 public:
-    QChatClient(Settings& settings) : m_settings(settings) {
+    ChatClient(Settings& settings) : m_settings(settings) {
 
     }
 
@@ -98,7 +121,7 @@ public:
 
     virtual void onPacketReceived ( uint16_t packetType, uint8_t* packet, uint16_t packetSize) override
     {
-        qDebug() << "Received packet type: " << packetType;
+        qDebug() << "Received packet packetType: " << packetType;
         switch(packetType)
         {
             case HandshakeRequest::type:
@@ -161,16 +184,18 @@ public:
                 UserId userId;
                 MessageId messageId;
                 std::string message = parseTextMessagePacket(packet, packetSize ,time, chatRoomId, messageId, userId, username);
-
-                emit OnMessageReceived(chatRoomId, username, message, time);    // TODO
+                emit OnMessageReceived(chatRoomId, messageId, username, message, time);    // TODO
                 break;
             }
             case ChatRoomRecordPacket::type:
             {
                 ChatRoomId chatRoomId;
                 std::vector<ChatRoomRecord> records = parseChatRoomRecordPacket(packet, packetSize, chatRoomId);
+                QTimer::singleShot(0, this, [=, this](){
+                    m_chatRoomMap[chatRoomId].addRecords(records);
+                    emit updateChatRoomList(chatRoomId);
+                });
 
-                //m_chatRoomMap[chatRoomId].OnRecords(); // TODO
                 break;
             }
         }
@@ -209,6 +234,11 @@ public:
             tcpClient->sendPacket(packet);
         }
         return true;
+    }
+
+    ChatRoomMap& getChatRoomMap()
+    {
+        return m_chatRoomMap;
     }
 
     virtual void closeConnection() override

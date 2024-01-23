@@ -32,7 +32,7 @@ public:
     template<typename T>
     void sendPacket(PacketHeader<T>& packet)
     {
-        qDebug() << "Send packet type: " << gTypeMap.m_typeMap[packet.type()];
+        qDebug() << ">>> Send packet packetType&: " << gTypeMap.m_typeMap[packet.packetType()] << " size of packet: " << sizeof(PacketHeader<T>);
         async_write(m_socket, boost::asio::buffer(&packet, sizeof(PacketHeader<T>)),
                     [this] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                         if ( ec )
@@ -46,7 +46,7 @@ public:
     template<typename T>
     void sendPacket(PacketHeader<T>* packet)
     {
-        qDebug() << "Send packet type: " << gTypeMap.m_typeMap[packet->type()];
+        qDebug() << ">>> Send packet packetType*: " << gTypeMap.m_typeMap[packet->packetType()] << " size of packet: " << sizeof(PacketHeader<T>);
         async_write(m_socket, boost::asio::buffer(&packet, sizeof(PacketHeader<T>)),
                     [this, packet] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                         delete packet;
@@ -61,7 +61,8 @@ public:
     template<typename T>
     void sendBufferedPacket(T* packet)
     {
-        async_write(m_socket, boost::asio::buffer(packet, packet->length()),
+        qDebug() << ">>> Send packet packetType: " << gTypeMap.m_typeMap[packet->packetType()] << " size of packet: " << packet->packetLength();
+        async_write(m_socket, boost::asio::buffer(packet, packet->packetLength()),
                     [this, packet] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                         delete packet;
                         if ( ec )
@@ -84,15 +85,16 @@ public:
                            qCritical() <<  "!!!! Session::readMessage error (0): " << ec.message();
                            return;
                        }
-                       qDebug() << "Async_read packet length : " << header->length() << " Packet type: "<< gTypeMap.m_typeMap[header->type()];
-                       if (header->length() == 0)
+                       qDebug() << "Async_read packet packetLength : " << header->packetLength() << " Packet packetType: " << gTypeMap.m_typeMap[header->packetType()];
+                       if (header->packetLength() == 0)
                        {
-                           qCritical()<<  "!!!! Length = 0";
+                           m_chat.onPacketReceived(header->packetType(), nullptr,
+                                                   header->packetLength(), weak_from_this());
                            return;
                        }
-                       auto readBuffer = std::make_shared<std::vector<uint8_t >>(header->length(), 0);
+                       auto readBuffer = std::make_shared<std::vector<uint8_t >>(header->packetLength(), 0);
 
-                       async_read( m_socket, buffer(*readBuffer), transfer_exactly(header->length()),
+                       async_read( m_socket, buffer(*readBuffer), transfer_exactly(header->packetLength()),
                                    [this, readBuffer, header = *header.get()]
                                            ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
                                    {
@@ -101,11 +103,12 @@ public:
                                            qCritical()<< "!!!! Session::readMessage error (1): " << ec.message();
                                            return;
                                        }
-                                       if (bytes_transferred != header.length())
+                                       if (bytes_transferred != header.packetLength())
                                        {
-                                           qCritical() << "!!! Bytes transferred doesn't equal length";
+                                           qCritical() << "!!! Bytes transferred doesn't equal packetLength";
                                        }
-                                       m_chat.onPacketReceived(header.type(), &(*readBuffer)[0], header.length(), weak_from_this());
+                                       m_chat.onPacketReceived(header.packetType(), &(*readBuffer)[0],
+                                                               header.packetLength(), weak_from_this());
                                        readPacket();
                                    });
                    });

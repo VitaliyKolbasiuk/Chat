@@ -58,7 +58,7 @@ namespace cereal
   {
     //! A static, pre-execution object
     /*! This class will create a single copy (singleton) of some
-        type and ensures that merely referencing this type will
+        type and ensures that merely referencing this packetType will
         cause it to be instantiated and initialized pre-execution.
         For example, this is used heavily in the polymorphic pointer
         serialization mechanisms to bind various archive types with

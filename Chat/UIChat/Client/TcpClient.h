@@ -49,8 +49,7 @@ public:
     template<typename T>
     void sendPacket(PacketHeader<T>& packet)
     {
-        qDebug() << PacketHeader<T>().length() + sizeof(PacketHeaderBase) << sizeof(PacketHeader<CreateChatRoomPacket>);
-        qDebug() << "Send Packet buffer length: " << packet.length() << " Type: " << gTypeMap.m_typeMap[packet.type()];
+        qDebug() << "Send Packet buffer packetLength: " << packet.packetLength() << " Type: " << gTypeMap.m_typeMap[packet.packetType()];
         async_write(m_socket, boost::asio::buffer(&packet, sizeof(PacketHeader<T>)),
                     [this] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                         qDebug() << "Async_write bytes transferred: " << bytes_transferred;
@@ -65,8 +64,8 @@ public:
     template<typename T>
     void sendBufferedPacket(const T* packet)
     {
-        qDebug() << "Send Packet buffer length: " << packet->length() << " Type: " << gTypeMap.m_typeMap[packet->packetType()];
-        async_write(m_socket, boost::asio::buffer(packet, packet->length()),
+        qDebug() << "Send Packet buffer packetLength: " << packet->packetLength() << " Type: " << gTypeMap.m_typeMap[packet->packetType()];
+        async_write(m_socket, boost::asio::buffer(packet, packet->packetLength()),
                     [this, packet] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                         delete packet;
                         if ( ec )
@@ -90,15 +89,16 @@ public:
                            qCritical() <<  "!!!! Session::readMessage error (0): " << ec.message();
                            return;
                        }
-                       qDebug() << "Async_read header length: " << header->length() << " Header type: " << gTypeMap.m_typeMap[header->type()];
-                       if (header->length() == 0)
+                       qDebug() << "Async_read header packetLength: " << header->packetLength() << " Header packetType: " << gTypeMap.m_typeMap[header->packetType()] << header->packetType();
+                       if (header->packetLength() == 0)
                        {
                            qCritical() <<  "!!!! Length = 0";
+                           readPacket();
                            return;
                        }
-                       auto readBuffer = std::make_shared<std::vector<uint8_t >>(header->length(), 0);
+                       auto readBuffer = std::make_shared<std::vector<uint8_t >>(header->packetLength(), 0);
 
-                       async_read( m_socket, buffer(*readBuffer), transfer_exactly(header->length()),
+                       async_read( m_socket, buffer(*readBuffer), transfer_exactly(header->packetLength()),
                                    [this, readBuffer, header = *header.get()]
                                            ( const boost::system::error_code& ec, std::size_t bytes_transferred  )
                                    {
@@ -107,11 +107,12 @@ public:
                                            qCritical() << "!!!! Session::readMessage error (1): " << ec.message();
                                            return;
                                        }
-                                       if (bytes_transferred != header.length())
+                                       if (bytes_transferred != header.packetLength())
                                        {
-                                           qCritical() << "!!! Bytes transferred doesn't equal length";
+                                           qCritical() << "!!! Bytes transferred doesn't equal packetLength";
                                        }
-                                       m_client->onPacketReceived(header.type(), &(*readBuffer)[0], header.length());
+                                       m_client->onPacketReceived(header.packetType(), &(*readBuffer)[0],
+                                                                  header.packetLength());
                                        readPacket();
                                    });
                    });
