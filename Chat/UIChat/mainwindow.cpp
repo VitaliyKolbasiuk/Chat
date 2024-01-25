@@ -39,6 +39,13 @@ void MainWindow::init()
     }
     m_chatClient = std::make_shared<ChatClient>(*m_settings);
 
+    connect(ui->m_chatRoomList, &QListWidget::currentRowChanged, this, [this](int currentRow){
+        if (auto item = ui->m_chatRoomList->currentItem(); item != nullptr)
+        {
+            doUpdateChatRoomRecords((ChatRoomId)item->data(Qt::UserRole).toUInt());
+        }
+    });
+
     connect(m_chatClient.get(), &ChatClient::OnMessageReceived, this, [this](ChatRoomId chatRoomId, MessageId messageId, const std::string& username, const std::string& message, uint64_t time){
         int year, month, day, hour, minute, second;
         parseUtcTime(time, year, month, day, hour, minute, second);
@@ -117,8 +124,8 @@ void MainWindow::init()
         }
     });
 
-    connect(m_chatClient.get(), &ChatClient::updateChatRoomList, this, [this](ChatRoomId chatRoomId){
-        doUpdateChatRoomList(chatRoomId);
+    connect(m_chatClient.get(), &ChatClient::updateChatRoomRecords, this, [this](ChatRoomId chatRoomId){
+        doUpdateChatRoomRecords(chatRoomId);
     });
 
     //qDebug() << QDir::homePath();
@@ -227,7 +234,7 @@ void MainWindow::on_m_CreateRoom_released()
     createChatRoom.exec();
 }
 
-void MainWindow::doUpdateChatRoomList(ChatRoomId chatRoomId)
+void MainWindow::doUpdateChatRoomRecords(ChatRoomId chatRoomId)
 {
     auto* currentItem =  ui->m_chatRoomList->currentItem();
     if (currentItem == nullptr)
@@ -243,6 +250,7 @@ void MainWindow::doUpdateChatRoomList(ChatRoomId chatRoomId)
 
     auto& chatRoomData = m_chatClient->getChatRoomMap()[chatRoomId];
 
+    ui->m_chatRoomArea->clear();
     for (const auto& [key, record] : chatRoomData.m_records)
     {
         QListWidgetItem *newItem = new QListWidgetItem;

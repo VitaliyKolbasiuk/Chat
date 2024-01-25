@@ -22,7 +22,7 @@ public:
     void init();
 
 private:
-    void doUpdateChatRoomList(ChatRoomId chatRoomId);
+    void doUpdateChatRoomRecords(ChatRoomId chatRoomId);
 
 private slots:
 

@@ -13,15 +13,19 @@
 
 class ServerSession : public std::enable_shared_from_this<ServerSession>
 {
-    io_context&             m_ioContext;
-    IChat&                  m_chat;
-    tcp::socket             m_socket;
-    boost::asio::streambuf  m_streambuf;
+    io_context&              m_ioContext;
+    IChat&                   m_chat;
+    boost::asio::streambuf   m_streambuf;
+    std::weak_ptr<IServer> m_tcpServer;
 
 public:
-    ServerSession( io_context& ioContext, IChat& chat, tcp::socket&& socket)
+    tcp::socket              m_socket;
+    Key                      m_userKey;
+
+    ServerSession( io_context& ioContext, IChat& chat, tcp::socket&& socket, std::weak_ptr<IServer> tcpServer)
             : m_ioContext(ioContext),
               m_chat(chat),
+              m_tcpServer(tcpServer),
               m_socket(std::move(socket))
     {
         //async_read( m_socket );
@@ -47,7 +51,7 @@ public:
     void sendPacket(PacketHeader<T>* packet)
     {
         qDebug() << ">>> Send packet packetType*: " << gTypeMap.m_typeMap[packet->packetType()] << " size of packet: " << sizeof(PacketHeader<T>);
-        async_write(m_socket, boost::asio::buffer(&packet, sizeof(PacketHeader<T>)),
+        async_write(m_socket, boost::asio::buffer(packet, sizeof(PacketHeader<T>)),
                     [this, packet] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                         delete packet;
                         if ( ec )
@@ -80,11 +84,18 @@ public:
         async_read(m_socket, buffer(headerPtr, sizeof(*header)), transfer_exactly(sizeof(PacketHeaderBase)),
                    [this, header = std::move(header)] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                        qDebug() << "Async_read bytes transferred: " << bytes_transferred;
+                       if ( ec == boost::asio::error::eof)
+                       {
+                           m_ioContext.post([this](){
+                               closeConnection();
+                           });
+                       }
                        if ( ec )
                        {
                            qCritical() <<  "!!!! Session::readMessage error (0): " << ec.message();
                            return;
                        }
+
                        qDebug() << "Async_read packet packetLength : " << header->packetLength() << " Packet packetType: " << gTypeMap.m_typeMap[header->packetType()];
                        if (header->packetLength() == 0)
                        {
@@ -117,6 +128,10 @@ public:
 
     void closeConnection()
     {
+        if (auto tcpServerPtr = m_tcpServer.lock(); tcpServerPtr)
+        {
+            tcpServerPtr->removeSession(*this);
+        }
         m_socket.close();
     }
 };

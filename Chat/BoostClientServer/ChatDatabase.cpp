@@ -26,7 +26,7 @@ struct Query{
 
     bool exec()
     {
-        qDebug() << "Query: " << m_query.lastQuery();
+        qDebug() << "SQLQuery exec: " << m_query.lastQuery();
         if (!m_query.exec())
         {
             qCritical() << "Exec query ERROR: " << m_query.lastError().text();
@@ -96,7 +96,7 @@ public:
 
     // TODO unread messages in db
 
-    std::string chatRoomTableName(int id)
+    std::string getChatRoomTableName(int id)
     {
         return "ChatRoomTable_" + std::to_string(id);
     }
@@ -106,19 +106,32 @@ public:
     {
         Query query(m_db);
 
+        query.prepare("SELECT ROWID FROM ChatRoomCatalogue ORDER BY ROWID DESC LIMIT 1;");
+        query.exec();
+
+        int chatRoomId;
+        if(query.next())
+        {
+            chatRoomId = query.value(0).toInt();
+        }
+        else
+        {
+            chatRoomId = 0;
+        }
+
+
+        std::string tableName = getChatRoomTableName(chatRoomId);
+
         query.prepare("INSERT INTO ChatRoomCatalogue (chatRoomName, chatRoomTableName, isPrivate, ownerPublicKey) "
                       "VALUES (:chatRoomName, "
                       ":chatRoomTableName, "
                       ":isPrivate, "
                       ":ownerPublicKey)");
         query.bindValue(":chatRoomName", chatRoomName);
+        query.bindValue(":chatRoomTableName", tableName);
         query.bindValue(":isPrivate", isPrivate);
         query.bindValue(":ownerPublicKey", toString(ownerPublicKey));
         query.exec();
-
-        int chatRoomId = query.lastInsertId();
-
-        std::string tableName = chatRoomTableName(chatRoomId);
 
         query.prepare("CREATE TABLE IF NOT EXISTS " + tableName + "_members "
                                                                   "("
@@ -149,23 +162,23 @@ public:
     void createChatRoomCatalogue()
     {
         Query query(m_db);
-        query.prepare("CREATE TABLE IF NOT EXISTS ChatRoomCatalogue \
-                                   (\
-                                        chatRoomId INTEGER PRIMARY KEY AUTOINCREMENT, \
-                                        chatRoomName TEXT,\
-                                        chatRoomTableName TEXT,\
-                                        ownerPublicKey TEXT VARCHAR(32),\
-                                        isPrivate INT\
-                                   );");
+        query.prepare("CREATE TABLE IF NOT EXISTS ChatRoomCatalogue "
+                      "("
+                      "chatRoomId INTEGER PRIMARY KEY AUTOINCREMENT, "
+                      "chatRoomName TEXT, "
+                      "chatRoomTableName TEXT, "
+                      "ownerPublicKey TEXT VARCHAR(32), "
+                      "isPrivate INT"
+                      ");");
         query.exec();
 
-        query.prepare("CREATE TABLE IF NOT EXISTS UserCatalogue \
-                                   (\
-                                        userId INTEGER PRIMARY KEY AUTOINCREMENT, \
-                                        publicKey CHARACTER(64) UNIQUE,\
-                                        deviceKey CHARACTER(64), \
-                                        nickname TEXT\
-                                   );");
+        query.prepare("CREATE TABLE IF NOT EXISTS UserCatalogue "
+                      "("
+                      "userId INTEGER PRIMARY KEY AUTOINCREMENT, "
+                      "publicKey CHARACTER(64) UNIQUE, "
+                      "deviceKey CHARACTER(64), "
+                      "nickname TEXT"
+                      ");");
         query.exec();
 
         //query.exec("INSERT INTO ChatRoomCatalogue (chatRoomName, chatRoomTableName) VALUES ('Room1', 'Room1_members');");
@@ -184,7 +197,6 @@ public:
             query.exec();
 
             int messageId = query.lastInsertId();
-            qDebug() << "Message id:" << messageId;
             return messageId;
         }
         else
@@ -195,16 +207,6 @@ public:
 
     }
 
-    int getChatRoomId(const std::string& chatRoomName)
-    {
-        Query query(m_db);
-        query.prepare("SELECT chatRoomId FROM ChatRoomCatalogue WHERE chatRoomTableName = '" + chatRoomName + "' ;");
-        query.exec();
-        query.next();
-        auto chatRoomId = query.value(0).toInt();
-        qDebug() << query.value(0);
-        return chatRoomId;
-    }
 
     virtual bool getUserId(const Key& publicKey, int& userId) override
     {
@@ -215,15 +217,6 @@ public:
         query.next();
         userId = query.value(0).toInt(&ok);
         return ok;
-    }
-
-    std::string getChatRoomTableName(int chatRoomId)
-    {
-        Query query(m_db);
-        query.prepare("SELECT chatRoomTableName FROM ChatRoomCatalogue WHERE chatRoomId = " + std::to_string(chatRoomId) + " ;");
-        query.exec();
-        query.next();
-        return query.value(0).toString().toStdString();
     }
 
     void onUserConnected(const Key& publicKey, const Key& deviceKey, const std::string& nickname, std::function<void(const ChatRoomInfoList&)> func) override
@@ -252,13 +245,12 @@ public:
     {
         Query query(m_db);
         std::string chatRoomTableName = getChatRoomTableName(chatRoomId.m_id);
-        query.prepare("SELECT id, message, senderIdRef, time  FROM " + chatRoomTableName + " ORDER BY id DESC WHERE id < " + std::to_string(messageId.m_id) + ";");
+        query.prepare("SELECT id, message, senderIdRef, time  FROM " + chatRoomTableName + " WHERE id < " + std::to_string(messageId.m_id) + " ORDER BY id DESC;");
         query.exec();
 
         std::vector<ChatRoomRecord> records;
-        for (int i = 0; i < messageNumber; i++)
+        for (int i = 0; query.next() && i < messageNumber; i++)
         {
-            query.next();
             int id = query.value(0).toInt();
             std::string message = query.value(1).toString().toStdString();
             int senderId = query.value(2).toInt();
@@ -273,13 +265,12 @@ public:
         ChatRoomInfoList chatRooms;
 
         Query query(m_db);
-        query.prepare("SELECT chatRoomId, chatRoomName, chatRoomTableName FROM ChatRoomCatalogue;");
+        query.prepare("SELECT chatRoomName, chatRoomTableName FROM ChatRoomCatalogue;");
         query.exec();
         while (query.next())
         {
-            uint32_t chatRoomId = query.value(0).toUInt();
-            QString chatRoomName = query.value(1).toString();
-            QString chatRoomTableName = query.value(2).toString();
+            QString chatRoomName = query.value(0).toString();
+            QString chatRoomTableName = query.value(1).toString();
 
             Query query2(m_db);
             query2.prepare("SELECT userId FROM " + chatRoomTableName.toStdString() + "_members WHERE userId = :userId;");
@@ -287,10 +278,32 @@ public:
             query2.exec();
             while (query2.next())
             {
+                int chatRoomId = getChatRoomId(chatRoomTableName.toStdString());
                 chatRooms.emplace_back(chatRoomId, chatRoomName.toStdString());
             }
         }
         return chatRooms;
+    }
+
+    int getChatRoomId(const std::string& chatRoomTableName)
+    {
+        size_t underscorePos = chatRoomTableName.find('_');
+
+        if (underscorePos != std::string::npos) {
+            std::string idSubstring = chatRoomTableName.substr(underscorePos + 1);
+
+            try {
+                int roomId = std::stoi(idSubstring);
+                return roomId;
+            } catch (const std::invalid_argument& e) {
+                qCritical() << "Invalid argument: " << e.what();
+            } catch (const std::out_of_range& e) {
+                qCritical() << "Out of range:  " << e.what();
+            }
+        } else {
+            qCritical() << "Underscore not found in the string.";
+        }
+        return -1;
     }
 
     virtual void readChatRoomCatalogue(std::function<void(uint32_t, const std::string&, const std::string&, const Key&, bool)> func) override

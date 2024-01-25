@@ -44,7 +44,7 @@ public:
         return m_length;
     }
 
-    void setLength(uint32_t length)
+    void setPacketLength(uint32_t length)
     {
         m_length = length;
     }
@@ -117,6 +117,37 @@ struct ChatRoomListPacket{
     }
 };
 
+inline ChatRoomListPacket* createChatRoomList(const ChatRoomInfoList& chatRoomList)
+{
+    size_t bufferSize = 0;
+    for(const auto& chatRoom : chatRoomList)
+    {
+        bufferSize += chatRoom.m_chatRoomName.size() + sizeof(ChatRoomId) +sizeof(uint16_t) + 1;  // length of string + zero-end
+    }
+
+    auto* buffer = new uint8_t[bufferSize + sizeof(PacketHeaderBase)];
+
+    auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
+    header->setPacketType(ChatRoomListPacket::type);
+    header->setPacketLength((uint32_t) bufferSize);
+
+    uint8_t* ptr = buffer + sizeof(PacketHeaderBase);
+    for(const auto& chatRoom : chatRoomList)
+    {
+        std::memcpy(ptr, &chatRoom.m_chatRoomId, sizeof(chatRoom.m_chatRoomId));
+        ptr += sizeof(chatRoom.m_chatRoomId);
+
+        uint16_t length = chatRoom.m_chatRoomName.size() + 1;
+        std::memcpy(ptr, &length, sizeof(length));
+        ptr += sizeof(length);
+
+        std::memcpy(ptr, chatRoom.m_chatRoomName.c_str(), length);
+        ptr += length;
+    }
+
+    return reinterpret_cast<ChatRoomListPacket*>(buffer);
+}
+
 inline ChatRoomInfoList parseChatRoomList(const uint8_t* buffer, size_t bufferSize)
 {
     ChatRoomInfoList chatRoomList;
@@ -168,43 +199,12 @@ inline ChatRoomInfoList parseChatRoomList(const uint8_t* buffer, size_t bufferSi
     return chatRoomList;
 }
 
-inline ChatRoomListPacket* createChatRoomList(const ChatRoomInfoList& chatRoomList)
-{
-    size_t bufferSize = 0;
-    for(const auto& chatRoom : chatRoomList)
-    {
-        bufferSize += chatRoom.m_chatRoomName.size() + sizeof(ChatRoomId) +sizeof(uint16_t) + 1;  // length of string + zero-end
-    }
-
-    auto* buffer = new uint8_t[bufferSize + sizeof(PacketHeaderBase)];
-
-    auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
-    header->setPacketType(ChatRoomListPacket::type);
-    header->setLength((uint32_t)bufferSize);
-
-    uint8_t* ptr = buffer + sizeof(PacketHeaderBase);
-    for(const auto& chatRoom : chatRoomList)
-    {
-        std::memcpy(ptr, &chatRoom.m_chatRoomId, sizeof(chatRoom.m_chatRoomId));
-        ptr += sizeof(chatRoom.m_chatRoomId);
-
-        uint16_t length = chatRoom.m_chatRoomName.size() + 1;
-        std::memcpy(ptr, &length, sizeof(length));
-        ptr += sizeof(length);
-
-        std::memcpy(ptr, chatRoom.m_chatRoomName.c_str(), length);
-        ptr += length;
-    }
-
-    return reinterpret_cast<ChatRoomListPacket*>(buffer);
-}
-
 // MESSAGE TO CLIENT
 struct ChatRoomUpdatePacket{
     enum { type = 3 };
     ChatRoomId m_chatRoomId;
     char m_chatRoomName[64];
-    bool m_addOrDelete;      // ADD - true, DELETE - false
+    uint32_t m_addOrDelete;      // ADD - true, DELETE - false
 };
 
 // MESSAGE TO SERVER
@@ -263,22 +263,39 @@ inline SendTextMessagePacket* createSendTextMessagePacket(const std::string& mes
 
     auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
     header->setPacketType(SendTextMessagePacket::type);
-    header->setLength((uint32_t)bufferSize - sizeof(PacketHeaderBase));
-    
-    *reinterpret_cast<uint64_t*>(buffer + sizeof(*header)) = currentUtc();
-    *reinterpret_cast<ChatRoomId*>(buffer + sizeof(*header) + sizeof(uint64_t)) = chatRoomId;
-    *reinterpret_cast<Key*>(buffer + sizeof(*header) + sizeof(uint64_t) + sizeof(ChatRoomId)) = publicKey;
-    std::memcpy(buffer + sizeof(*header) + sizeof(uint64_t) + sizeof(ChatRoomId) + sizeof(Key), message.c_str(), message.size() + 1);
+    header->setPacketLength((uint32_t) bufferSize - sizeof(PacketHeaderBase));
+    qDebug() << header->packetLength() << sizeof(uint64_t) + sizeof(chatRoomId) + sizeof(Key) + message.size() + 1;
+
+    auto* ptr = buffer + sizeof(*header);
+
+    *reinterpret_cast<uint64_t*>(ptr) = currentUtc();
+    ptr += sizeof(uint64_t);
+
+    *reinterpret_cast<ChatRoomId*>(ptr) = chatRoomId;
+    ptr += sizeof(ChatRoomId);
+
+    *reinterpret_cast<Key*>(ptr) = publicKey;
+    ptr += sizeof(Key);
+
+    std::memcpy(ptr, message.c_str(), message.size() + 1);
 
     return reinterpret_cast<SendTextMessagePacket*>(buffer);
 }
 
 inline std::string parseSendTextMessagePacket(const uint8_t* buffer, size_t bufferSize, uint64_t& time, ChatRoomId& chatRoomId, Key& publicKey)
 {
-    time = *reinterpret_cast<const uint64_t*>(buffer);
-    chatRoomId = *reinterpret_cast<const ChatRoomId*>(buffer + sizeof(uint64_t));
-    publicKey = *reinterpret_cast<const Key*>(buffer + sizeof(uint64_t) + sizeof(ChatRoomId));
-    std::string message(reinterpret_cast<const char*>(buffer) + sizeof(uint64_t) + sizeof(ChatRoomId) + sizeof(Key), bufferSize - sizeof(PacketHeaderBase) - sizeof(uint64_t) - sizeof(ChatRoomId) - sizeof(Key) - 1);
+    auto* ptr = buffer;
+
+    time = *reinterpret_cast<const uint64_t*>(ptr);
+    ptr += sizeof(uint64_t);
+
+    chatRoomId = *reinterpret_cast<const ChatRoomId*>(ptr);
+    ptr += sizeof(ChatRoomId);
+
+    publicKey = *reinterpret_cast<const Key*>(ptr);
+    ptr += sizeof(Key);
+
+    std::string message(reinterpret_cast<const char*>(ptr), buffer + bufferSize - ptr - 1);
 
     return message;
 }
@@ -310,7 +327,7 @@ inline TextMessagePacket* createTextMessagePacket(const std::string& message, Me
 
     auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
     header->setPacketType(TextMessagePacket::type);
-    header->setLength((uint32_t)bufferSize - sizeof(PacketHeaderBase));
+    header->setPacketLength((uint32_t) bufferSize - sizeof(PacketHeaderBase));
 
     auto* ptr = buffer + sizeof(*header);
 
@@ -400,7 +417,7 @@ inline ChatRoomRecordPacket* createChatRoomRecordPacket(ChatRoomId chatRoomId, c
 
     auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
     header->setPacketType(ChatRoomRecordPacket::type);
-    header->setLength((uint32_t)bufferSize - sizeof(PacketHeaderBase));
+    header->setPacketLength((uint32_t) bufferSize - sizeof(PacketHeaderBase));
 
     auto* ptr = buffer + sizeof(*header);
 

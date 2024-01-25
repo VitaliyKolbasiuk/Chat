@@ -71,7 +71,7 @@ signals:
 
     void OnChatRoomAddedOrDeleted(const ChatRoomId& chatRoomId, const std::string chatRoomName, bool isAdd);
 
-    void updateChatRoomList(ChatRoomId chatRoomId);
+    void updateChatRoomRecords(ChatRoomId chatRoomId);
 
 private:
     std::weak_ptr<TcpClient>  m_tcpClient;
@@ -135,8 +135,7 @@ public:
             }
             case ChatRoomListPacket::type:
             {
-                qDebug() << "ChatRoomListPacket received";
-                ChatRoomInfoList chatRoomList = parseChatRoomList(packet, packetSize - sizeof(PacketHeaderBase));
+                ChatRoomInfoList chatRoomList = parseChatRoomList(packet, packetSize);
 
                 for (const auto& chatRoomInfo : chatRoomList)
                 {
@@ -184,6 +183,8 @@ public:
                 UserId userId;
                 MessageId messageId;
                 std::string message = parseTextMessagePacket(packet, packetSize ,time, chatRoomId, messageId, userId, username);
+
+                m_chatRoomMap[chatRoomId].addMessage({messageId, (std::time_t)time, userId, message});
                 emit OnMessageReceived(chatRoomId, messageId, username, message, time);    // TODO
                 break;
             }
@@ -193,7 +194,7 @@ public:
                 std::vector<ChatRoomRecord> records = parseChatRoomRecordPacket(packet, packetSize, chatRoomId);
                 QTimer::singleShot(0, this, [=, this](){
                     m_chatRoomMap[chatRoomId].addRecords(records);
-                    emit updateChatRoomList(chatRoomId);
+                    emit updateChatRoomRecords(chatRoomId);
                 });
 
                 break;

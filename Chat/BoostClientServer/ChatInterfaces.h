@@ -21,7 +21,7 @@ protected:
 public:
     virtual void onPacketReceived(uint16_t packetType, const uint8_t* readBuffer, uint16_t length, std::weak_ptr<ServerSession> session) = 0;
     virtual void updateChatRoomList(const std::string& chatRoomName, uint32_t id, bool isAdd, std::weak_ptr<ServerSession> session) = 0;
-    //virtual void closeConnection(Session& client) = 0;
+    virtual void closeConnection(ServerSession& serverSession) = 0;
 };
 
 class IServer
@@ -29,6 +29,7 @@ class IServer
 public:
     virtual ~IServer() = default;
     virtual void execute() = 0;
+    virtual void removeSession(ServerSession&) = 0;
 };
 
 class IChatDatabase

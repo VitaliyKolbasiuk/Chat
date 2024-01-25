@@ -10,7 +10,7 @@
 using namespace boost::asio;
 using ip::tcp;
 
-class TcpServer : public IServer
+class TcpServer : public IServer, std::enable_shared_from_this<TcpServer>
 {
     IChat&          m_chat;
 
@@ -41,12 +41,21 @@ public:
             if (!ec)
             {
                 qDebug() << "Connection established" << socket.remote_endpoint().address().to_string() << ": " << socket.remote_endpoint().port();
-                auto session = std::make_shared<ServerSession>( m_ioContext, m_chat, std::move(socket) );
+                auto session = std::make_shared<ServerSession>( m_ioContext, m_chat, std::move(socket), weak_from_this());
                 m_sessions.push_back(session);
                 session->readPacket();
             }
 
             accept();
+        });
+    }
+
+    void removeSession(ServerSession& serverSession) override
+    {
+        m_chat.closeConnection(serverSession);
+
+        std::erase_if(m_sessions, [&serverSession](const auto& session){
+            return session->m_socket.remote_endpoint() == serverSession.m_socket.remote_endpoint();
         });
     }
 };

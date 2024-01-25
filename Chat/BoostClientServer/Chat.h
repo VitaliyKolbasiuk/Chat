@@ -34,12 +34,6 @@ struct ChatRoom
     bool        isPrivate;
     std::map<Key, std::weak_ptr<UserInfo>> m_clients;
 
-
-    std::map<Key, std::weak_ptr<UserInfo>>& clients()
-    {
-        return m_clients;
-    }
-
 };
 
 class Chat: public IChat
@@ -72,7 +66,6 @@ public:
             {
                 qDebug() << "<ConnectRequest> received";
                 const ConnectRequest& request = *(reinterpret_cast<const ConnectRequest*>(readBuffer));
-                qDebug() << request.m_nickname;
 
                 //  Looking if user had any previous connection
                 auto it = m_users.find(request.m_publicKey);
@@ -91,6 +84,7 @@ public:
                 generateRandomKey(it->second->m_connections.back().m_handshakeRequest.m_packet.m_random);
                 if (const auto& sessionPtr = session.lock(); sessionPtr)
                 {
+                    sessionPtr->m_userKey = request.m_publicKey;
                     sessionPtr->sendPacket(it->second->m_connections.back().m_handshakeRequest);
                 }
                 else{
@@ -102,7 +96,6 @@ public:
             {
                 qDebug() << "<HandshakeResponse> received";
                 const HandshakeResponse& response = *(reinterpret_cast<const HandshakeResponse*>(readBuffer));
-                qDebug() << response.m_nickname;
                 if (!response.verify())
                 {
                     qCritical() << "Bad Handshake response";
@@ -260,7 +253,7 @@ public:
             qCritical() << "Internal error";
             return;
         }
-        for (auto& user : it->second.clients())
+        for (auto& user : it->second.m_clients)
         {
             auto userIt = m_users.find(user.first);
             if (userIt != m_users.end())
@@ -289,5 +282,36 @@ public:
                 sessionPtr->sendPacket(packet);
             }
         });
+    }
+
+    void closeConnection(ServerSession& serverSession) override
+    {
+        for(auto& [chatRoomId, chatRoom] : m_chatRooms)
+        {
+            if (auto clientIt = chatRoom.m_clients.find(serverSession.m_userKey); clientIt != chatRoom.m_clients.end())
+            {
+                auto userInfoPtr = clientIt->second.lock();
+                if (!userInfoPtr)
+                {
+                    qWarning() << "Internal error";
+                    chatRoom.m_clients.erase(clientIt);
+                    return;
+                }
+                std::erase_if(userInfoPtr->m_connections, [this, &serverSession](const auto& connection){
+                    if (auto sessionPtr = connection.m_session.lock(); sessionPtr)
+                    {
+                        return sessionPtr->m_socket.remote_endpoint() == serverSession.m_socket.remote_endpoint();
+                    }
+                    return false;
+                });
+            }
+        }
+        if (auto userInfoIt = m_users.find(serverSession.m_userKey); userInfoIt != m_users.end())
+        {
+            if (userInfoIt->second->m_connections.empty())
+            {
+                m_users.erase(userInfoIt);
+            }
+        }
     }
 };
