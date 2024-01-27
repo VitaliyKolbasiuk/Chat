@@ -5,6 +5,8 @@
 
 #include "Types.h"
 
+inline bool secondClient = false;
+
 struct KeyPair{
     std::array<uint8_t, 64> m_privateKey;
     std::array<uint8_t, 32> m_publicKey;
@@ -20,6 +22,10 @@ class Settings{
     //std::string m_historyFileName;
 
     std::string settingsFileName(){
+        if (secondClient)
+        {
+            return "settings3_2.bin";
+        }
         return "settings3.bin";
     }
 

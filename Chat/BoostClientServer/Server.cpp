@@ -10,7 +10,7 @@
 using namespace boost::asio;
 using ip::tcp;
 
-class TcpServer : public IServer, std::enable_shared_from_this<TcpServer>
+class TcpServer : public IServer, public std::enable_shared_from_this<TcpServer>
 {
     IChat&          m_chat;
 
@@ -60,7 +60,7 @@ public:
     }
 };
 
-IServer* createServer(io_context& ioContext, IChat& chat, int port)
+std::shared_ptr<IServer> createServer(io_context& ioContext, IChat& chat, int port)
 {
-    return new TcpServer(ioContext, chat, port);
+    return  std::make_shared<TcpServer>(ioContext, chat, port);
 }

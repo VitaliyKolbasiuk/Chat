@@ -99,7 +99,15 @@ add_executable(StartClient
         UIChat/SettingsDialog.cpp
         UIChat/SettingsDialog.h
         UIChat/SettingsDialog.ui
+        UIChat/ChatRoomConnect.cpp
+        UIChat/ChatRoomConnect.h
+        UIChat/ChatRoomConnect.ui
         UIChat/Types.h
+)
+
+add_custom_target(StartClient2
+        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/StartClient 2
+        DEPENDS StartClient
 )
 
 set_target_properties(StartServer PROPERTIES

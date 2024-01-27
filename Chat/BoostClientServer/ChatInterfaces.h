@@ -24,7 +24,7 @@ public:
     virtual void closeConnection(ServerSession& serverSession) = 0;
 };
 
-class IServer
+class IServer //: public std::enable_shared_from_this<IServer>
 {
 public:
     virtual ~IServer() = default;
@@ -48,4 +48,4 @@ public:
 
 IChatDatabase* createDatabase(IChat& chat);
 
-IServer* createServer(io_context& ioContext, IChat& chat, int port);
+std::shared_ptr<IServer> createServer(io_context& ioContext, IChat& chat, int port);

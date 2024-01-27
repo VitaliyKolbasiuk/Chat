@@ -7,6 +7,7 @@
 #include "Utils.h"
 #include "CreateChatRoom.h"
 #include "SettingsDialog.h"
+#include "ChatRoomConnect.h"
 
 #include <QDir>
 #include <QTextBrowser>
@@ -127,6 +128,8 @@ void MainWindow::init()
     connect(m_chatClient.get(), &ChatClient::updateChatRoomRecords, this, [this](ChatRoomId chatRoomId){
         doUpdateChatRoomRecords(chatRoomId);
     });
+    
+    connect(ui->m_connectToChatRoomBtn, &QPushButton::released, this, &MainWindow::on_ConnectToChatRoomBtn_released);
 
     //qDebug() << QDir::homePath();
     //system("dir");
@@ -157,10 +160,8 @@ void MainWindow::configureUI()
     QString style = "background-color: #282e33; color : #e9f2f4; font : bold; QLabel { text-align: center; }";
 
     ui->centralwidget->setStyleSheet("background-color: #18191d");
-    ui->TextChatRoomName->setStyleSheet(style);
     ui->TextUsername->setStyleSheet(style);
     ui->Username->setStyleSheet(style);
-    ui->ChatRoomName->setStyleSheet(style);
     ui->Exit->setStyleSheet(style);
     ui->Join->setStyleSheet(style);
     ui->m_chatRoomArea->setStyleSheet(style);
@@ -177,27 +178,6 @@ void MainWindow::onChatRoomListReceived()
 {
 
 }
-
-void MainWindow::on_Join_released()
-{
-    QString chatRoomName = ui->TextChatRoomName->text();
-    QString username = ui->TextUsername->text();
-    if (!chatRoomName.isEmpty() && !username.isEmpty())
-    {
-        //m_chatClient->sendUserMessage(JOIN_TO_CHAT_CMD ";");
-        ui->TextChatRoomName->setVisible(false);
-        ui->TextUsername->setVisible(false);
-        ui->Join->setVisible(false);
-        ui->ChatRoomName->setVisible(false);
-        ui->Username->setVisible(false);
-        ui->SaveSettings->setVisible(false);
-        ui->SendMessage->setVisible(true);
-        ui->UserMessage->setVisible(true);
-    }
-}
-
-
-
 
 void MainWindow::on_SaveSettings_released()
 {
@@ -232,6 +212,13 @@ void MainWindow::on_m_CreateRoom_released()
     CreateChatRoom createChatRoom(*m_chatClient, nullptr);
     createChatRoom.setModal(true);
     createChatRoom.exec();
+}
+
+void MainWindow::on_ConnectToChatRoomBtn_released()
+{
+    ChatRoomConnect chatRoomConnect;
+    chatRoomConnect.setModal(true);
+    chatRoomConnect.exec();
 }
 
 void MainWindow::doUpdateChatRoomRecords(ChatRoomId chatRoomId)

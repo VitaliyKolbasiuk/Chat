@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
         {
             Chat chat;
 
-            IServer* server = createServer(gServerIoContext, chat, 1234);
+            auto server = createServer(gServerIoContext, chat, 1234);
             server->execute();
         });
     serverThread.join();

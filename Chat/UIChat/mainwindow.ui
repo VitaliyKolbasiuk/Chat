@@ -14,19 +14,6 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLabel" name="ChatRoomName">
-    <property name="geometry">
-     <rect>
-      <x>190</x>
-      <y>650</y>
-      <width>121</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>ChatRoom:</string>
-    </property>
-   </widget>
    <widget class="QLabel" name="Username">
     <property name="geometry">
      <rect>
@@ -51,16 +38,6 @@
     </property>
     <property name="text">
      <string>Join</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="TextChatRoomName">
-    <property name="geometry">
-     <rect>
-      <x>320</x>
-      <y>650</y>
-      <width>121</width>
-      <height>31</height>
-     </rect>
     </property>
    </widget>
    <widget class="QLineEdit" name="TextUsername">
@@ -153,6 +130,19 @@
       <width>441</width>
       <height>281</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="m_connectToChatRoomBtn">
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>600</y>
+      <width>181</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Connect to Chat Room</string>
     </property>
    </widget>
   </widget>

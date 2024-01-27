@@ -1,6 +1,3 @@
-//
-// Created by vitaliykolbasiuk on 23.11.23.
-//
 #pragma once
 
 #include <iostream>
@@ -28,6 +25,10 @@ public:
               m_tcpServer(tcpServer),
               m_socket(std::move(socket))
     {
+        if (auto tcpServerPtr = m_tcpServer.lock(); tcpServerPtr)
+        {
+            qDebug() << "TcpServer lock";
+        }
         //async_read( m_socket );
     }
 
@@ -84,7 +85,7 @@ public:
         async_read(m_socket, buffer(headerPtr, sizeof(*header)), transfer_exactly(sizeof(PacketHeaderBase)),
                    [this, header = std::move(header)] (const boost::system::error_code& ec, std::size_t bytes_transferred ) {
                        qDebug() << "Async_read bytes transferred: " << bytes_transferred;
-                       if ( ec == boost::asio::error::eof)
+                       if ( ec.value() == boost::asio::error::eof)
                        {
                            m_ioContext.post([this](){
                                closeConnection();
@@ -132,6 +133,9 @@ public:
         {
             tcpServerPtr->removeSession(*this);
         }
-        m_socket.close();
+        try
+        {
+            m_socket.close();
+        } catch(...){}
     }
 };

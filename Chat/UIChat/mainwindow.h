@@ -26,13 +26,13 @@ private:
 
 private slots:
 
-    void on_Join_released();
-
     void on_SaveSettings_released();
 
     void on_SendMessage_released();
 
     void on_Exit_released();
+
+    void on_ConnectToChatRoomBtn_released();
 
     void on_m_CreateRoom_released();
 

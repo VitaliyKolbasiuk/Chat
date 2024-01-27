@@ -16,7 +16,6 @@
 #include "Settings.h"
 #include "ed25519/src/ed25519.h"
 
-
 struct ChatRoomData{
     ChatRoomId  m_id;
     std::string m_name;
