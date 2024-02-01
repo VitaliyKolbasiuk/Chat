@@ -486,6 +486,19 @@ inline std::vector<ChatRoomRecord> parseChatRoomRecordPacket(const uint8_t* buff
     return records;
 }
 
+struct ConnectChatRoom{
+    enum { type = 106};
+
+    char m_chatRoomName[64];
+};
+
+struct ConnectChatRoomFailed
+{
+    enum { type = 6};
+
+    char m_chatRoomName[64];
+};
+
 struct TypeMap{
     std::map<int, std::string> m_typeMap;
     TypeMap(){
@@ -499,6 +512,8 @@ struct TypeMap{
         m_typeMap[SendTextMessagePacket::type] = "<SendTextMessagePacket>";
         m_typeMap[TextMessagePacket::type] = "<TextMessagePacket>";
         m_typeMap[ChatRoomRecordPacket::type] = "<ChatRoomRecordPacket>";
+        m_typeMap[ConnectChatRoom::type] = "<ConnectChatRoom>";
+        m_typeMap[ConnectChatRoomFailed::type] = "<ConnectChatRoomFailed>";
     }
 };
 

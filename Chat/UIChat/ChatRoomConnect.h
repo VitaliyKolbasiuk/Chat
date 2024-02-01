@@ -7,6 +7,7 @@
 
 #include <QDialog>
 
+#include "Client/ChatClient.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -20,12 +21,19 @@ class ChatRoomConnect : public QDialog
     Q_OBJECT
 
 public:
-    explicit ChatRoomConnect(QWidget *parent = nullptr);
+    explicit ChatRoomConnect(ChatClient& chatClient, QWidget *parent = nullptr);
 
     ~ChatRoomConnect() override;
 
+//private slots:
+    void on_connectBtn_released();
+
+    void on_cancelBtn_released();
+
 private:
     Ui::ChatRoomConnect *ui;
+
+    ChatClient& m_chatClient;
 };
 
 

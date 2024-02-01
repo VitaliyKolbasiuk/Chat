@@ -216,7 +216,7 @@ void MainWindow::on_m_CreateRoom_released()
 
 void MainWindow::on_ConnectToChatRoomBtn_released()
 {
-    ChatRoomConnect chatRoomConnect;
+    ChatRoomConnect chatRoomConnect(*m_chatClient, nullptr);
     chatRoomConnect.setModal(true);
     chatRoomConnect.exec();
 }

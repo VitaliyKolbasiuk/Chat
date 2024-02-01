@@ -198,6 +198,11 @@ public:
 
                 break;
             }
+            case ConnectChatRoomFailed::type:
+            {
+
+                break;
+            }
         }
     }
 
@@ -230,6 +235,23 @@ public:
         packet.m_packet.sign(m_settings.m_keyPair.m_privateKey);
 
         if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
+        {
+            tcpClient->sendPacket(packet);
+        }
+        return true;
+    }
+
+    bool connectToChatRoom(const std::string& chatRoomName)
+    {
+        PacketHeader<ConnectChatRoom> packet;
+        if (chatRoomName.size() + 1 > sizeof(packet.m_packet.m_chatRoomName))
+        {
+            return false;
+        }
+        std::memcpy(&packet.m_packet.m_chatRoomName, chatRoomName.c_str(), chatRoomName.size() + 1);
+
+
+        if (const auto& tcpClient = m_tcpClient.lock(); tcpClient)
         {
             tcpClient->sendPacket(packet);
         }
