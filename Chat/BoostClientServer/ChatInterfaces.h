@@ -13,10 +13,10 @@ inline io_context gServerIoContext;
 
 class ServerSession;
 
-class IChat
+class IChatModel
 {
 protected:
-    virtual ~IChat() = default;
+    virtual ~IChatModel() = default;
 
 public:
     virtual void onPacketReceived(uint16_t packetType, const uint8_t* readBuffer, uint16_t length, std::weak_ptr<ServerSession> session) = 0;
@@ -49,6 +49,6 @@ public:
     virtual void onConnectToChatRoomMessage(const std::string& chatRoomName, Key userKey, std::weak_ptr<ServerSession> session) = 0;
 };
 
-IChatDatabase* createDatabase(IChat& chat);
+IChatDatabase* createDatabase(IChatModel& chat);
 
-std::shared_ptr<IServer> createServer(io_context& ioContext, IChat& chat, int port);
+std::shared_ptr<IServer> createServer(io_context& ioContext, IChatModel& chat, int port);

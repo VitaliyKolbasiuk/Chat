@@ -36,7 +36,7 @@ struct ChatRoom
 
 };
 
-class ChatServer: public IChat
+class ChatModel: public IChatModel
 {
     // TODO remove user when disconnects
     std::map<Key, std::shared_ptr<UserInfo>> m_users;
@@ -44,7 +44,7 @@ class ChatServer: public IChat
     IChatDatabase& m_database;
 
 public:
-    ChatServer() : m_database(*createDatabase(*this))
+    ChatModel() : m_database(*createDatabase(*this))
     {
         qDebug() << "Read ChatRoomCatalogue";
         m_database.readChatRoomCatalogue([this](uint32_t chatRoomId, const std::string& chatRoomName, const std::string& chatRoomTableName, const Key& publicKey, bool isPrivate){
@@ -52,7 +52,7 @@ public:
         });
     }
 
-    ~ChatServer()
+    ~ChatModel()
     {
         delete &m_database;
     }
@@ -218,7 +218,6 @@ public:
             }
             case SendTextMessagePacket::type:
             {
-                const SendTextMessagePacket& packet = *(reinterpret_cast<const SendTextMessagePacket*>(readBuffer));
                 uint64_t time;
                 ChatRoomId chatRoomId;
                 Key publicKey;

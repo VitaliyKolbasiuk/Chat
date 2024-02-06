@@ -54,7 +54,7 @@ endif()
 add_executable(StartServer
     #Log.h
     BoostClientServer/server_main.cpp
-        BoostClientServer/ChatServer.h
+        BoostClientServer/ChatModel.h
     BoostClientServer/Server.cpp
     BoostClientServer/ChatInterfaces.h
     BoostClientServer/ChatDatabase.cpp

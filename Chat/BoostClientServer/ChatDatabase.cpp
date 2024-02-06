@@ -72,10 +72,10 @@ struct Query{
 class ChatDatabase : public IChatDatabase
 {
     QSqlDatabase m_db;
-    IChat&       m_chat;
+    IChatModel&       m_chat;
 
 public:
-    ChatDatabase(IChat& chat) : m_chat(chat) {
+    ChatDatabase(IChatModel& chat) : m_chat(chat) {
         //qDebug() << QSqlDatabase::drivers();
         //std::filesystem::remove("ChatDatabase.sqlite");
 
@@ -224,7 +224,7 @@ public:
     void onUserConnected(const Key& publicKey, const Key& deviceKey, const std::string& nickname, std::function<void(const ChatRoomInfoList&)> func) override
     {
         Query query (m_db);
-        query.prepare("INSERT INTO UserCatalogue (publicKey , deviceKey, nickname) VALUES (:publicKey, :deviceKey, :nickname);");
+        query.prepare("INSERT INTO UserCatalogue (publicKey, deviceKey, nickname) VALUES (:publicKey, :deviceKey, :nickname);");
         query.bindValue(":publicKey", toString((std::array<uint8_t, 32>&)publicKey));
         query.bindValue(":deviceKey",  toString((std::array<uint8_t, 32>&)deviceKey));
         query.bindValue(":nickname", nickname);
@@ -395,7 +395,7 @@ public:
 
 };
 
-IChatDatabase* createDatabase(IChat& chat)
+IChatDatabase* createDatabase(IChatModel& chat)
 {
     return (IChatDatabase*)new ChatDatabase(chat);
 }

@@ -11,7 +11,7 @@
 class ServerSession : public std::enable_shared_from_this<ServerSession>
 {
     io_context&              m_ioContext;
-    IChat&                   m_chat;
+    IChatModel&              m_chatModel;
     boost::asio::streambuf   m_streambuf;
     std::weak_ptr<IServer> m_tcpServer;
 
@@ -19,9 +19,9 @@ public:
     tcp::socket              m_socket;
     Key                      m_userKey;
 
-    ServerSession( io_context& ioContext, IChat& chat, tcp::socket&& socket, std::weak_ptr<IServer> tcpServer)
+    ServerSession(io_context& ioContext, IChatModel& chat, tcp::socket&& socket, std::weak_ptr<IServer> tcpServer)
             : m_ioContext(ioContext),
-              m_chat(chat),
+              m_chatModel(chat),
               m_tcpServer(tcpServer),
               m_socket(std::move(socket))
     {
@@ -100,8 +100,8 @@ public:
                        qDebug() << "Async_read packet packetLength : " << header->packetLength() << " Packet packetType: " << gTypeMap.m_typeMap[header->packetType()];
                        if (header->packetLength() == 0)
                        {
-                           m_chat.onPacketReceived(header->packetType(), nullptr,
-                                                   header->packetLength(), weak_from_this());
+                           m_chatModel.onPacketReceived(header->packetType(), nullptr,
+                                                        header->packetLength(), weak_from_this());
                            return;
                        }
                        auto readBuffer = std::make_shared<std::vector<uint8_t >>(header->packetLength(), 0);
@@ -119,8 +119,8 @@ public:
                                        {
                                            qCritical() << "!!! Bytes transferred doesn't equal packetLength";
                                        }
-                                       m_chat.onPacketReceived(header.packetType(), &(*readBuffer)[0],
-                                                               header.packetLength(), weak_from_this());
+                                       m_chatModel.onPacketReceived(header.packetType(), &(*readBuffer)[0],
+                                                                    header.packetLength(), weak_from_this());
                                        readPacket();
                                    });
                    });

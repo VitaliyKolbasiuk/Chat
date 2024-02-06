@@ -2,7 +2,7 @@
 #include <QApplication>
 
 #include "ChatInterfaces.h"
-#include "ChatServer.h"
+#include "ChatModel.h"
 
 
 int main(int argc, char *argv[])
@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     std::thread serverThread(
         []
         {
-            ChatServer chat;
+            ChatModel chat;
 
             auto server = createServer(gServerIoContext, chat, 1234);
             server->execute();
