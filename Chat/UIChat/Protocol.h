@@ -122,7 +122,8 @@ inline ChatRoomListPacket* createChatRoomList(const ChatRoomInfoList& chatRoomLi
     size_t bufferSize = 0;
     for(const auto& chatRoom : chatRoomList)
     {
-        bufferSize += chatRoom.m_chatRoomName.size() + sizeof(ChatRoomId) +sizeof(uint16_t) + 1;  // length of string + zero-end
+        // length of string + zero-end + owner public key + isPrivate
+        bufferSize += chatRoom.m_chatRoomName.size() + sizeof(ChatRoomId) +sizeof(uint16_t) + 1 + sizeof(Key) + sizeof(uint8_t);
     }
 
     auto* buffer = new uint8_t[bufferSize + sizeof(PacketHeaderBase)];
@@ -143,6 +144,8 @@ inline ChatRoomListPacket* createChatRoomList(const ChatRoomInfoList& chatRoomLi
 
         std::memcpy(ptr, chatRoom.m_chatRoomName.c_str(), length);
         ptr += length;
+
+
     }
 
     return reinterpret_cast<ChatRoomListPacket*>(buffer);
@@ -155,6 +158,7 @@ inline ChatRoomInfoList parseChatRoomList(const uint8_t* buffer, size_t bufferSi
     const uint8_t* ptr = buffer;
     while (ptr < bufferEnd)
     {
+        // ID
         uint32_t id;
         if (bufferEnd - ptr >= sizeof(id))
         {
@@ -167,6 +171,7 @@ inline ChatRoomInfoList parseChatRoomList(const uint8_t* buffer, size_t bufferSi
             return {};
         }
 
+        // chatRoomName length
         uint16_t length;
         if (bufferEnd - ptr >= sizeof(length))
         {
@@ -183,6 +188,8 @@ inline ChatRoomInfoList parseChatRoomList(const uint8_t* buffer, size_t bufferSi
             qWarning() << "Invalid chatRoomListPacket(packetLength = 0)";
             return {};
         }
+
+        // chatRoomName
         std::string chatRoomName;
         if (bufferEnd - ptr >= length)
         {
@@ -194,6 +201,11 @@ inline ChatRoomInfoList parseChatRoomList(const uint8_t* buffer, size_t bufferSi
             qWarning() << "Invalid chatRoomListPacket (name)";
             return {};
         }
+
+        // isPrivate
+
+        // ownerKey
+
         chatRoomList.emplace_back(id, chatRoomName);
     }
     return chatRoomList;
@@ -204,7 +216,8 @@ struct ChatRoomUpdatePacket{
     enum { type = 3 };
     ChatRoomId m_chatRoomId;
     char m_chatRoomName[64];
-    uint32_t m_addOrDelete;      // ADD - true, DELETE - false
+    uint32_t m_addOrDelete;      // ADD - 1, DELETE - 0     uint32_t instead of bool because of padding
+    bool     m_isOwner;
 };
 
 // MESSAGE TO SERVER
@@ -499,6 +512,22 @@ struct ConnectChatRoomFailed
     char m_chatRoomName[64];
 };
 
+struct SendDeleteChatRoomRequest
+{
+    enum { type = 107};
+
+    ChatRoomId m_chatRoomId;
+    bool       m_onlyLeave;
+};
+
+struct SendDeleteChatRoomResponse
+{
+    enum { type = 7};
+
+    ChatRoomId m_chatRoomId;
+    bool       m_isOwner;
+};
+
 struct TypeMap{
     std::map<int, std::string> m_typeMap;
     TypeMap(){
@@ -514,6 +543,8 @@ struct TypeMap{
         m_typeMap[ChatRoomRecordPacket::type] = "<ChatRoomRecordPacket>";
         m_typeMap[ConnectChatRoom::type] = "<ConnectChatRoom>";
         m_typeMap[ConnectChatRoomFailed::type] = "<ConnectChatRoomFailed>";
+        m_typeMap[SendDeleteChatRoomRequest::type] = "<SendDeleteChatRoomRequest>";
+        m_typeMap[SendDeleteChatRoomResponse::type] = "<SendDeleteChatRoomResponse>";
     }
 };
 

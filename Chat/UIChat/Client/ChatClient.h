@@ -19,12 +19,13 @@
 struct ChatRoomData{
     ChatRoomId  m_id;
     std::string m_name;
+    bool        m_isOwner;
     int         m_position = 0;
     int         m_offset = 0;
 
     ChatRoomData() = default;
     ChatRoomData(const ChatRoomData&) = default;
-    ChatRoomData(const ChatRoomId& id, const std::string& name) : m_id(id), m_name(name) {}
+    ChatRoomData(const ChatRoomId& id ,const std::string& name, bool isOwner) : m_id(id), m_name(name), m_isOwner(isOwner) {}
 
     struct Record{
         MessageId    m_messageId;
@@ -105,13 +106,13 @@ public:
         }
         std::memcpy(&m_connectRequest.m_packet.m_nickname, m_settings.m_username.c_str(), m_settings.m_username.size() + 1);
 
-        if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
+        if (const auto tcpClient = m_tcpClient.lock(); tcpClient )
         {
             qDebug() << "Started read loop";
             tcpClient->readPacket();        //readPacket() will always call itself
         }
 
-        if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
+        if (const auto tcpClient = m_tcpClient.lock(); tcpClient )
         {
             qDebug() << "Connect request has been sent";
             tcpClient->sendPacket(m_connectRequest);
@@ -138,7 +139,10 @@ public:
 
                 for (const auto& chatRoomInfo : chatRoomList)
                 {
-                    m_chatRoomMap[ChatRoomId(chatRoomInfo.m_chatRoomId)] = ChatRoomData{ChatRoomId(chatRoomInfo.m_chatRoomId), chatRoomInfo.m_chatRoomName};
+                    qDebug() << toString(chatRoomInfo.m_ownerPublicKey) << ' ' << toString(m_settings.m_keyPair.m_publicKey);
+                    m_chatRoomMap[ChatRoomId(chatRoomInfo.m_chatRoomId)] = ChatRoomData{ChatRoomId(chatRoomInfo.m_chatRoomId),
+                                                                                        chatRoomInfo.m_chatRoomName,
+                                                                                        chatRoomInfo.m_ownerPublicKey == m_settings.m_keyPair.m_publicKey};
                 }
 
                 // UPDATE ChatRoomList
@@ -149,7 +153,7 @@ public:
                     PacketHeader<RequestMessagesPacket> request;
                     request.m_packet.m_chatRoomId = chatRoomInfo.m_id;
                     request.m_packet.m_messageNumber = 100;
-                    if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
+                    if (const auto tcpClient = m_tcpClient.lock(); tcpClient )
                     {
                         tcpClient->sendPacket(request);
                     }
@@ -163,7 +167,9 @@ public:
 
                 if (response.m_addOrDelete)
                 {
-                    m_chatRoomMap[response.m_chatRoomId] = ChatRoomData{response.m_chatRoomId, response.m_chatRoomName};
+                    m_chatRoomMap[response.m_chatRoomId] = ChatRoomData{response.m_chatRoomId,
+                                                                        response.m_chatRoomName,
+                                                                        response.m_isOwner};
                 }
                 else
                 {
@@ -203,6 +209,13 @@ public:
 
                 break;
             }
+            case SendDeleteChatRoomResponse::type:
+            {
+                const SendDeleteChatRoomResponse& response = *(reinterpret_cast<const SendDeleteChatRoomResponse*>(packet));
+
+
+                break;
+            }
         }
     }
 
@@ -216,7 +229,7 @@ public:
         response.m_packet.m_random = request.m_random;
         response.m_packet.sign(m_settings.m_keyPair.m_privateKey);
 
-        if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
+        if (const auto tcpClient = m_tcpClient.lock(); tcpClient )
         {
             tcpClient->sendPacket(response);
         }
@@ -234,7 +247,7 @@ public:
         packet.m_packet.m_publicKey = m_settings.m_keyPair.m_publicKey;
         packet.m_packet.sign(m_settings.m_keyPair.m_privateKey);
 
-        if (const auto& tcpClient = m_tcpClient.lock(); tcpClient )
+        if (const auto tcpClient = m_tcpClient.lock(); tcpClient )
         {
             tcpClient->sendPacket(packet);
         }
@@ -251,11 +264,23 @@ public:
         std::memcpy(&packet.m_packet.m_chatRoomName, chatRoomName.c_str(), chatRoomName.size() + 1);
 
 
-        if (const auto& tcpClient = m_tcpClient.lock(); tcpClient)
+        if (const auto tcpClient = m_tcpClient.lock(); tcpClient)
         {
             tcpClient->sendPacket(packet);
         }
         return true;
+    }
+
+    void sendDeleteChatRoomRequest(ChatRoomId chatRoomId, bool onlyLeave)
+    {
+        PacketHeader<SendDeleteChatRoomRequest> packet;
+        packet.m_packet.m_chatRoomId = chatRoomId;
+        packet.m_packet.m_onlyLeave  = onlyLeave;
+
+        if (auto tcpClient = m_tcpClient.lock(); tcpClient)
+        {
+            tcpClient->sendPacket(packet);
+        }
     }
 
     ChatRoomMap& getChatRoomMap()

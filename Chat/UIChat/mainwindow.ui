@@ -102,14 +102,29 @@
    <widget class="QPushButton" name="m_CreateRoom">
     <property name="geometry">
      <rect>
-      <x>720</x>
-      <y>560</y>
-      <width>131</width>
-      <height>61</height>
+      <x>200</x>
+      <y>480</y>
+      <width>81</width>
+      <height>31</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <stylestrategy>PreferDefault</stylestrategy>
+      <kerning>true</kerning>
+     </font>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::LeftToRight</enum>
+    </property>
+    <property name="autoFillBackground">
+     <bool>false</bool>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
     <property name="text">
-     <string>Create Room</string>
+     <string>+</string>
     </property>
    </widget>
    <widget class="QListWidget" name="m_chatRoomList">
@@ -145,6 +160,37 @@
      <string>Connect to Chat Room</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="m_deleteRoom">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>480</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::LeftToRight</enum>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+    <property name="text">
+     <string>-</string>
+    </property>
+   </widget>
+   <zorder>Username</zorder>
+   <zorder>Join</zorder>
+   <zorder>TextUsername</zorder>
+   <zorder>UserMessage</zorder>
+   <zorder>SendMessage</zorder>
+   <zorder>SaveSettings</zorder>
+   <zorder>Exit</zorder>
+   <zorder>m_chatRoomList</zorder>
+   <zorder>m_chatRoomArea</zorder>
+   <zorder>m_connectToChatRoomBtn</zorder>
+   <zorder>m_CreateRoom</zorder>
+   <zorder>m_deleteRoom</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

@@ -82,7 +82,7 @@ public:
 
                 // Send HandShake
                 generateRandomKey(it->second->m_connections.back().m_handshakeRequest.m_packet.m_random);
-                if (const auto& sessionPtr = session.lock(); sessionPtr)
+                if (const auto sessionPtr = session.lock(); sessionPtr)
                 {
                     sessionPtr->m_userKey = request.m_publicKey;
                     sessionPtr->sendPacket(it->second->m_connections.back().m_handshakeRequest);
@@ -125,7 +125,7 @@ public:
                 });
                 if (connectionIt == it->second->m_connections.end())
                 {
-                    if (const auto& sessionPtr = session.lock(); sessionPtr)
+                    if (const auto sessionPtr = session.lock(); sessionPtr)
                     {
                         qCritical() << "Close connection3";
                         sessionPtr->closeConnection();
@@ -136,7 +136,7 @@ public:
                 // Security from malicious
                 if (connectionIt->m_handshakeRequest.m_packet.m_random != response.m_random)
                 {
-                    if (const auto& sessionPtr = session.lock(); sessionPtr)
+                    if (const auto sessionPtr = session.lock(); sessionPtr)
                     {
                         qCritical() << "Close connection4";
                         sessionPtr->closeConnection();
@@ -157,11 +157,12 @@ public:
                                     return;
                                boost::asio::post(gServerIoContext, [=, this]() mutable
                                {
-                                   if (const auto &sessionPtr = session.lock(); sessionPtr)
+                                   if (const auto sessionPtr = session.lock(); sessionPtr)
                                    {
                                        qDebug() << "ChatRoomListPacket has been sent";
                                        ChatRoomListPacket *packet = createChatRoomList(
                                                chatRoomList);
+
                                        sessionPtr->sendBufferedPacket<ChatRoomListPacket>(packet);
 
                                        for (auto &chatRoomInfo: chatRoomList)
@@ -184,7 +185,7 @@ public:
                     m_database.onRequestMessages(request.m_chatRoomId, request.m_messageNumber, request.m_messageId, [=, this](const std::vector<ChatRoomRecord>& recordsList){
                         boost::asio::post(gServerIoContext, [=, this]() mutable
                         {
-                            if (const auto &sessionPtr = session.lock(); sessionPtr)
+                            if (const auto sessionPtr = session.lock(); sessionPtr)
                             {
                                 auto* packet = createChatRoomRecordPacket(request.m_chatRoomId, recordsList);
                                 sessionPtr->sendBufferedPacket<ChatRoomRecordPacket>(packet);
@@ -245,6 +246,7 @@ public:
             {
                 const ConnectChatRoom& packet = *(reinterpret_cast<const ConnectChatRoom*>(readBuffer));
 
+
                 if (auto sessionPtr = session.lock(); sessionPtr)
                 {
                     boost::asio::post( gDatabaseIoContext, [=, this, userKey = sessionPtr->m_userKey]() mutable
@@ -252,6 +254,20 @@ public:
                         m_database.onConnectToChatRoomMessage(packet.m_chatRoomName, userKey, session);
                     } );
                 }
+                break;
+            }
+            case SendDeleteChatRoomRequest::type:
+            {
+                const SendDeleteChatRoomRequest packet = *(reinterpret_cast<const SendDeleteChatRoomRequest*>(readBuffer));
+
+                if (auto sessionPtr = session.lock(); sessionPtr)
+                {
+                    boost::asio::post(gDatabaseIoContext, [=, this, userKey = sessionPtr->m_userKey]() mutable
+                    {
+                        m_database.leaveChatRoom(packet.m_chatRoomId, userKey, packet.m_onlyLeave);
+                    });
+                }
+
                 break;
             }
         }
@@ -283,13 +299,14 @@ public:
         }
     }
 
-    virtual void updateChatRoomList(const std::string& chatRoomName, uint32_t id, bool isAdd, std::weak_ptr<ServerSession> session) override
+    virtual void updateChatRoomList(const std::string& chatRoomName, uint32_t id, bool isAdd, bool isOwner, std::weak_ptr<ServerSession> session) override
     {
         PacketHeader<ChatRoomUpdatePacket>* packet = new PacketHeader<ChatRoomUpdatePacket>;
         std::memcpy(&packet->m_packet.m_chatRoomName, chatRoomName.c_str(), chatRoomName.size() + 1);
         packet->m_packet.m_chatRoomId = id;
         packet->m_packet.m_addOrDelete = isAdd;
-        if (const auto& sessionPtr = session.lock(); sessionPtr)
+        packet->m_packet.m_isOwner = isOwner;
+        if (const auto sessionPtr = session.lock(); sessionPtr)
         {
             if (isAdd)
             {
@@ -305,7 +322,7 @@ public:
             }
         }
         boost::asio::post(gServerIoContext, [packet, session]{
-            if (const auto &sessionPtr = session.lock(); sessionPtr)
+            if (const auto sessionPtr = session.lock(); sessionPtr)
             {
                 sessionPtr->sendPacket(packet);
             }
@@ -318,11 +335,24 @@ public:
         std::memcpy(&packet->m_packet.m_chatRoomName, chatRoomName.c_str(), chatRoomName.size() + 1);
 
         boost::asio::post(gServerIoContext, [packet, session]{
-            if (const auto& sessionPtr = session.lock(); sessionPtr)
+            if (const auto sessionPtr = session.lock(); sessionPtr)
             {
                 sessionPtr->sendPacket(packet);
             }
         });
+    }
+
+    void sendDeleteChatRoomResponse(ChatRoomId chatRoomId, bool isOwner, std::weak_ptr<ServerSession> session) override
+    {
+        PacketHeader<SendDeleteChatRoomResponse> packet;
+        packet.m_packet.m_chatRoomId = chatRoomId;
+        packet.m_packet.m_isOwner = isOwner;
+
+        qDebug() << "SIZEOF SendDeleteChatRoomResponse" << sizeof(SendDeleteChatRoomResponse);
+        if (auto sessionPtr = session.lock(); sessionPtr)
+        {
+            sessionPtr->sendPacket(packet);
+        }
     }
 
 

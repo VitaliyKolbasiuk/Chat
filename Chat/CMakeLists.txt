@@ -103,6 +103,12 @@ add_executable(StartClient
         UIChat/ChatRoomConnect.h
         UIChat/ChatRoomConnect.ui
         UIChat/Types.h
+        UIChat/DeleteChatRoomDialog.cpp
+        UIChat/DeleteChatRoomDialog.h
+        UIChat/DeleteChatRoomDialog.ui
+        UIChat/LeaveChatRoomDialog.cpp
+        UIChat/LeaveChatRoomDialog.h
+        UIChat/LeaveChatRoomDialog.ui
 )
 
 add_custom_target(StartClient2

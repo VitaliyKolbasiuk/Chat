@@ -36,6 +36,8 @@ private slots:
 
     void on_m_CreateRoom_released();
 
+    void on_m_deleteRoomBtn_released();
+
     void onChatRoomListReceived();
 
 private:

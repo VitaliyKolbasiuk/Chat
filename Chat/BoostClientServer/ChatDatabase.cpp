@@ -156,7 +156,7 @@ public:
             qWarning() << "createChatRoomTable insert into  " + tableName + "_members failed";
         }
 
-        m_chat.updateChatRoomList(chatRoomName, chatRoomId, true, session);
+        m_chat.updateChatRoomList(chatRoomName, chatRoomId, true, true, session);
 
         return chatRoomId;
     }
@@ -267,13 +267,18 @@ public:
         ChatRoomInfoList chatRooms;
 
         Query query(m_db);
-        query.prepare("SELECT chatRoomName, chatRoomId FROM ChatRoomCatalogue;");
+        query.prepare("SELECT chatRoomName, chatRoomId, ownerPublicKey, isPrivate FROM ChatRoomCatalogue;");
         query.exec();
         while (query.next())
         {
-            QString chatRoomName = query.value(0).toString();
+            std::string chatRoomName = query.value(0).toString().toStdString();
             int chatRoomId = query.value(1).toInt();
             std::string chatRoomTableName = getChatRoomTableName(chatRoomId);
+
+            Key ownerKey;
+            fromString(query.value(2).toString().toStdString(), ownerKey);
+
+            bool isPrivate = query.value(3).toBool();
 
             Query query2(m_db);
             query2.prepare("SELECT userId FROM " + chatRoomTableName + "_members WHERE userId = :userId;");
@@ -281,7 +286,7 @@ public:
             query2.exec();
             while (query2.next())
             {
-                chatRooms.emplace_back(chatRoomId, chatRoomName.toStdString());
+                chatRooms.emplace_back(chatRoomId, chatRoomName, ownerKey, isPrivate);
             }
         }
         return chatRooms;
@@ -336,17 +341,10 @@ public:
             return;
         }
 
-        query.prepare("SELECT chatRoomId FROM ChatRoomCatalogue WHERE chatRoomName = '" + chatRoomName + "';");
-        //query.prepare("SELECT chatRoomId, chatRoomName chatRoomName FROM ChatRoomCatalogue;");
+        query.prepare("SELECT chatRoomId FROM ChatRoomCatalogue WHERE chatRoomName = '" + chatRoomName + "' "
+                                                                                                         "AND isPrivate = 0 "
+                                                                                                         "AND ownerPublicKey != '" + toString(userKey) + "';");
         query.exec();
-
-//        while (query.next())
-//        {
-//            int id = query.value(0).toInt();
-//            std::string name = query.value(1).toString().toStdString();
-//            qDebug() << id << ' ' << name << ' ' << (name == chatRoomName);
-//        }
-//        return;
 
         std::vector<int> chatRoomIdList;
         while (query.next())
@@ -360,7 +358,7 @@ public:
             query.prepare("INSERT INTO " + chatRoomTableName + "_members (userId) VALUES (" + std::to_string(userId) + ");");
             query.exec();
 
-            m_chat.updateChatRoomList(chatRoomName, chatRoomId, true, session);
+            m_chat.updateChatRoomList(chatRoomName, chatRoomId, true, false, session);
         }
 
         if (chatRoomIdList.empty())
@@ -370,6 +368,67 @@ public:
         }
     }
 
+    void leaveChatRoom(ChatRoomId chatRoomId, Key userKey, bool onlyLeave) override
+    {
+        Query query(m_db);
+
+        bool isOwner = checkChatRoomOwner(chatRoomId, userKey);
+
+        if (!onlyLeave && !isOwner)
+        {
+            qCritical() << "leaveChatRoom: !onlyLeave && !isOwner ";
+            return;
+        }
+        else if (onlyLeave && isOwner)
+        {
+            qCritical() << "leaveChatRoom: onlyLeave && isOwner";
+            return;
+        }
+
+        int userId;
+        if (!getUserId(userKey, userId))
+        {
+            qDebug() << "Non existing user";
+            return;
+        }
+
+        std::string chatRoomName = getChatRoomTableName(chatRoomId.m_id);
+
+        if (onlyLeave)
+        {
+            query.prepare("DELETE FROM " + chatRoomName + "_members WHERE userId = " + std::to_string(userId) + ";");
+            query.exec();
+        }
+        else
+        {
+            query.prepare("DELETE FROM ChatRoomCatalogue WHERE chatRoomId = " + std::to_string(chatRoomId.m_id) + ";");
+            query.exec();
+
+            query.prepare("DROP TABLE " + chatRoomName + ";");
+            query.exec();
+
+            query.prepare("DROP TABLE " + chatRoomName + "_members;");
+            query.exec();
+        }
+    }
+
+    bool checkChatRoomOwner(ChatRoomId chatRoomId, const Key& userKey)
+    {
+        Query query(m_db);
+
+        query.prepare("SELECT ownerPublicKey FROM ChatRoomCatalogue WHERE chatRoomId = " + std::to_string(chatRoomId.m_id) + ";");
+        query.exec();
+
+        if (!query.next())
+        {
+            qCritical() << "No chat room found";
+            return false;
+        }
+
+        Key ownerKey;
+        fromString(query.value(0).toString().toStdString(), ownerKey);
+        return ownerKey == userKey;
+    }
 
 
 

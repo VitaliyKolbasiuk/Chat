@@ -8,6 +8,8 @@
 #include "CreateChatRoom.h"
 #include "SettingsDialog.h"
 #include "ChatRoomConnect.h"
+#include "DeleteChatRoomDialog.h"
+#include "LeaveChatRoomDialog.h"
 
 #include <QDir>
 #include <QTextBrowser>
@@ -131,6 +133,10 @@ void MainWindow::init()
     
     connect(ui->m_connectToChatRoomBtn, &QPushButton::released, this, &MainWindow::on_ConnectToChatRoomBtn_released);
 
+    connect(ui->m_deleteRoom, &QPushButton::released, this, &MainWindow::on_m_deleteRoomBtn_released);
+
+
+
     //qDebug() << QDir::homePath();
     //system("dir");
     ui->TextUsername->setText(QString::fromStdString(m_settings->m_username));
@@ -168,7 +174,8 @@ void MainWindow::configureUI()
     ui->SaveSettings->setStyleSheet(style);
     ui->UserMessage->setStyleSheet(style);
     ui->SendMessage->setStyleSheet(style);
-    ui->m_CreateRoom->setStyleSheet(style);
+    ui->m_CreateRoom->setStyleSheet("background-color: #282e33; color : lightgreen; font : bold; QLabel { text-align: center; }");
+    ui->m_deleteRoom->setStyleSheet("background-color: #282e33; color : red; font : bold; QLabel { text-align: center; }");
 
     ui->m_chatRoomList->setStyleSheet(style);
 
@@ -196,6 +203,28 @@ void MainWindow::on_SendMessage_released()
         m_tcpClient->sendBufferedPacket<SendTextMessagePacket>(packet);
 
         ui->UserMessage->clear();
+    }
+}
+
+void MainWindow::on_m_deleteRoomBtn_released()
+{
+    if (ui->m_chatRoomList->currentItem() != nullptr)
+    {
+        auto chatRoomInfo = m_chatClient->getChatRoomMap().find(static_cast<ChatRoomId>(ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toUInt()));
+        ChatRoomId chatRoomId = static_cast<ChatRoomId>(ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toUInt());
+        if (chatRoomInfo->second.m_isOwner)
+        {
+            DeleteChatRoomDialog deleteChatRoomDialog(*m_chatClient, chatRoomId);
+            deleteChatRoomDialog.setModal(true);
+            deleteChatRoomDialog.exec();
+        }
+        else
+        {
+            LeaveChatRoomDialog leaveChatRoomDialog(*m_chatClient, chatRoomId);
+            leaveChatRoomDialog.setModal(true);
+            leaveChatRoomDialog.exec();
+        }
+        //m_chatClient->sendDeleteChatRoomRequest(static_cast<ChatRoomId>(ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toUInt()));
     }
 }
 
