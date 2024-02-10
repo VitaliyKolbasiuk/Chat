@@ -80,7 +80,7 @@ void MainWindow::init()
         }
     });
 
-    connect(m_chatClient.get(), &ChatClient::OnChatRoomAddedOrDeleted, this, [this](const ChatRoomId& chatRoomId, const std::string& chatRoomName, bool isAdd){
+    connect(m_chatClient.get(), &ChatClient::OnChatRoomAddedOrDeleted, this, [this](const ChatRoomId chatRoomId, const std::string& chatRoomName, bool isAdd){
         QListWidgetItem *newItem = new QListWidgetItem;
         QVariant id(chatRoomId.m_id);
         newItem->setData(Qt::UserRole, id);
@@ -97,7 +97,7 @@ void MainWindow::init()
 
             for (auto item : itemsToRemove)
             {
-                if (item->data(Qt::UserRole).toUInt() == 5)
+                if (item->data(Qt::UserRole).toUInt() == chatRoomId.m_id)
                 {
                     int row = ui->m_chatRoomList->row(item);
                     ui->m_chatRoomList->takeItem(row);

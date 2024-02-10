@@ -213,7 +213,9 @@ public:
                                                                                    session);
 
                     assert(m_users.find(packet.m_publicKey) != m_users.end());
-                    m_chatRooms[(ChatRoomId)chatRoomId].m_clients[packet.m_publicKey] = m_users[packet.m_publicKey];
+                    m_chatRooms[static_cast<ChatRoomId>(chatRoomId)].m_clients[packet.m_publicKey] = m_users[packet.m_publicKey];
+                    m_chatRooms[static_cast<ChatRoomId>(chatRoomId)].chatRoomName = packet.m_chatRoomName;
+                    m_chatRooms[static_cast<ChatRoomId>(chatRoomId)].ownerPublicKey = packet.m_publicKey;
                 } );
                 break;
             }
@@ -266,6 +268,15 @@ public:
                     {
                         m_database.leaveChatRoom(packet.m_chatRoomId, userKey, packet.m_onlyLeave);
                     });
+                }
+
+                if (packet.m_onlyLeave)
+                {
+                    leaveChatRoom(packet.m_chatRoomId, session);
+                }
+                else
+                {
+                    deleteChatRoom(packet.m_chatRoomId);
                 }
 
                 break;
@@ -329,7 +340,7 @@ public:
         });
     }
 
-    virtual void connectToChatRoomFailed(const std::string& chatRoomName, std::weak_ptr<ServerSession> session) override
+    void connectToChatRoomFailed(const std::string& chatRoomName, std::weak_ptr<ServerSession> session) override
     {
         PacketHeader<ConnectChatRoomFailed>* packet = new PacketHeader<ConnectChatRoomFailed>;
         std::memcpy(&packet->m_packet.m_chatRoomName, chatRoomName.c_str(), chatRoomName.size() + 1);
@@ -342,19 +353,49 @@ public:
         });
     }
 
-    void sendDeleteChatRoomResponse(ChatRoomId chatRoomId, bool isOwner, std::weak_ptr<ServerSession> session) override
+    void deleteChatRoom(ChatRoomId chatRoomId)
     {
-        PacketHeader<SendDeleteChatRoomResponse> packet;
+        PacketHeader<ChatRoomUpdatePacket> packet;
         packet.m_packet.m_chatRoomId = chatRoomId;
-        packet.m_packet.m_isOwner = isOwner;
+        std::string chatRoomName = m_chatRooms[chatRoomId].chatRoomName;
+        std::memcpy(&packet.m_packet.m_chatRoomName, chatRoomName.c_str(), chatRoomName.size() + 1) ;
+        packet.m_packet.m_addOrDelete = false;
 
-        qDebug() << "SIZEOF SendDeleteChatRoomResponse" << sizeof(SendDeleteChatRoomResponse);
+        auto clientsIt = m_chatRooms[chatRoomId].m_clients;
+        for (auto& [userKey, userInfo] : clientsIt)
+        {
+            auto userInfoPtr = userInfo.lock();
+            if (!userInfoPtr)
+            {
+                qCritical() << "Internal error";
+                return;
+            }
+            for (auto& connection : userInfoPtr->m_connections)
+            {
+                if (auto sessionPtr = connection.m_session.lock(); sessionPtr)
+                {
+                    sessionPtr->sendPacket(packet);
+                }
+            }
+        }
+
+        m_chatRooms.erase(chatRoomId);
+    }
+
+    void leaveChatRoom(ChatRoomId chatRoomId, std::weak_ptr<ServerSession> session)
+    {
+        PacketHeader<ChatRoomUpdatePacket> packet;
+        packet.m_packet.m_chatRoomId = chatRoomId;
+        std::string chatRoomName = m_chatRooms[chatRoomId].chatRoomName;
+        std::memcpy(&packet.m_packet.m_chatRoomName, chatRoomName.c_str(), chatRoomName.size() + 1) ;
+        packet.m_packet.m_addOrDelete = false;
+
         if (auto sessionPtr = session.lock(); sessionPtr)
         {
             sessionPtr->sendPacket(packet);
+            m_chatRooms[chatRoomId].m_clients.erase(sessionPtr->m_userKey);
         }
     }
-
 
     void closeConnection(ServerSession& serverSession) override
     {
@@ -365,11 +406,11 @@ public:
                 auto userInfoPtr = clientIt->second.lock();
                 if (!userInfoPtr)
                 {
-                    qWarning() << "Internal error";
+                    qCritical() << "Internal error";
                     chatRoom.m_clients.erase(clientIt);
                     return;
                 }
-                std::erase_if(userInfoPtr->m_connections, [this, &serverSession](const auto& connection){
+                std::erase_if(userInfoPtr->m_connections, [&serverSession](const auto& connection){
                     if (auto sessionPtr = connection.m_session.lock(); sessionPtr)
                     {
                         return sessionPtr->m_socket.remote_endpoint() == serverSession.m_socket.remote_endpoint();

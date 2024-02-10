@@ -145,7 +145,11 @@ inline ChatRoomListPacket* createChatRoomList(const ChatRoomInfoList& chatRoomLi
         std::memcpy(ptr, chatRoom.m_chatRoomName.c_str(), length);
         ptr += length;
 
+        *reinterpret_cast<bool*>(ptr) = chatRoom.m_isPrivate;
+        ptr += sizeof(bool);
 
+        *reinterpret_cast<Key*>(ptr) = chatRoom.m_ownerPublicKey;
+        ptr += sizeof(Key);
     }
 
     return reinterpret_cast<ChatRoomListPacket*>(buffer);
@@ -203,10 +207,32 @@ inline ChatRoomInfoList parseChatRoomList(const uint8_t* buffer, size_t bufferSi
         }
 
         // isPrivate
+        bool isPrivate;
+        if (bufferEnd - ptr >= length)
+        {
+            isPrivate = *reinterpret_cast<const bool*>(ptr);
+            ptr += sizeof(bool);
+        }
+        else
+        {
+            qWarning() << "Invalid chatRoomListPacket (name)";
+            return {};
+        }
 
-        // ownerKey
+        // owner public key
+        Key ownerKey;
+        if (bufferEnd - ptr >= length)
+        {
+            ownerKey = *reinterpret_cast<const Key*>(ptr);
+            ptr += sizeof(Key);
+        }
+        else
+        {
+            qWarning() << "Invalid chatRoomListPacket (name)";
+            return {};
+        }
 
-        chatRoomList.emplace_back(id, chatRoomName);
+        chatRoomList.emplace_back(id, chatRoomName, ownerKey, isPrivate);
     }
     return chatRoomList;
 }
@@ -520,14 +546,6 @@ struct SendDeleteChatRoomRequest
     bool       m_onlyLeave;
 };
 
-struct SendDeleteChatRoomResponse
-{
-    enum { type = 7};
-
-    ChatRoomId m_chatRoomId;
-    bool       m_isOwner;
-};
-
 struct TypeMap{
     std::map<int, std::string> m_typeMap;
     TypeMap(){
@@ -544,7 +562,6 @@ struct TypeMap{
         m_typeMap[ConnectChatRoom::type] = "<ConnectChatRoom>";
         m_typeMap[ConnectChatRoomFailed::type] = "<ConnectChatRoomFailed>";
         m_typeMap[SendDeleteChatRoomRequest::type] = "<SendDeleteChatRoomRequest>";
-        m_typeMap[SendDeleteChatRoomResponse::type] = "<SendDeleteChatRoomResponse>";
     }
 };
 

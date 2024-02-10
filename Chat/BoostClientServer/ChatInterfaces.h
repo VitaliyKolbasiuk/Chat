@@ -22,7 +22,6 @@ public:
     virtual void onPacketReceived(uint16_t packetType, const uint8_t* readBuffer, uint16_t length, std::weak_ptr<ServerSession> session) = 0;
     virtual void updateChatRoomList(const std::string& chatRoomName, uint32_t id, bool isAdd, bool isOwner, std::weak_ptr<ServerSession> session) = 0;
     virtual void connectToChatRoomFailed(const std::string& chatRoomName, std::weak_ptr<ServerSession> session) = 0;
-    virtual void sendDeleteChatRoomResponse(ChatRoomId chatRoomId, bool isOwner, std::weak_ptr<ServerSession> session) = 0;
 
     virtual void closeConnection(ServerSession& serverSession) = 0;
 };

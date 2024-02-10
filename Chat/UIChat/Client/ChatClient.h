@@ -209,13 +209,6 @@ public:
 
                 break;
             }
-            case SendDeleteChatRoomResponse::type:
-            {
-                const SendDeleteChatRoomResponse& response = *(reinterpret_cast<const SendDeleteChatRoomResponse*>(packet));
-
-
-                break;
-            }
         }
     }
 
