@@ -20,6 +20,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void init();
+    void showMessage(MessageId messageId, const std::string& username, const std::string& message, uint64_t hour, uint64_t minute);
 
 private:
     void doUpdateChatRoomRecords(ChatRoomId chatRoomId);

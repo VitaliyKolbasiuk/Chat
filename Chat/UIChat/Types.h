@@ -56,6 +56,7 @@ struct ChatRoomRecord{
     std::time_t  m_time;
     UserId       m_userId;
     std::string  m_text;
+    std::string  m_username;
 };
 
 inline char hexTable[] = {

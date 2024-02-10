@@ -247,7 +247,14 @@ public:
     {
         Query query(m_db);
         std::string chatRoomTableName = getChatRoomTableName(chatRoomId.m_id);
-        query.prepare("SELECT id, message, senderIdRef, time  FROM " + chatRoomTableName + " WHERE id < " + std::to_string(messageId.m_id) + " ORDER BY id DESC;");
+        //std::string nestedSelect = "(SELECT username, userId FROM UserCatalogue WHERE userId = senderIdRef)";
+        //query.prepare("SELECT id, message, senderIdRef, time, " + nestedSelect + " FROM " + chatRoomTableName + " WHERE id < " + std::to_string(messageId.m_id) + " ORDER BY id DESC;");
+
+        //query.prepare("SELECT id, message, senderIdRef, time, UserCatalogue.nickname FROM " + chatRoomTableName + " INNER JOIN UserCatalogue ON userId = senderIdRef");
+
+        query.prepare("SELECT id, message, senderIdRef, time, UserCatalogue.nickname FROM " + chatRoomTableName + " INNER JOIN UserCatalogue ON userId = senderIdRef WHERE id < " + std::to_string(messageId.m_id) + " ORDER BY id DESC;");
+
+
         query.exec();
 
         std::vector<ChatRoomRecord> records;
@@ -257,7 +264,8 @@ public:
             std::string message = query.value(1).toString().toStdString();
             int senderId = query.value(2).toInt();
             int time = query.value(3).toInt();
-            records.emplace_back(id, time, senderId, message);
+            std::string username = query.value(4).toString().toStdString();
+            records.emplace_back(id, time, senderId, message, username);
         }
         func(records);
     }

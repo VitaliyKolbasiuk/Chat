@@ -50,32 +50,18 @@ void MainWindow::init()
     });
 
     connect(m_chatClient.get(), &ChatClient::OnMessageReceived, this, [this](ChatRoomId chatRoomId, MessageId messageId, const std::string& username, const std::string& message, uint64_t time){
-        int year, month, day, hour, minute, second;
-        parseUtcTime(time, year, month, day, hour, minute, second);
-
-        for (int i = 0; i < ui->m_chatRoomList->count(); i++)
+        if (ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toUInt() == chatRoomId.m_id)
         {
-            if (ui->m_chatRoomList->item(i)->data(Qt::UserRole) == chatRoomId.m_id)
+            int year, month, day, hour, minute, second;
+            parseUtcTime(time, year, month, day, hour, minute, second);
+
+            for (int i = 0; i < ui->m_chatRoomList->count(); i++)
             {
-                ui->m_chatRoomList->setCurrentRow(i);
-
-                QListWidgetItem *newItem = new QListWidgetItem;
-                QTextBrowser *textBrowser = new QTextBrowser;
-                newItem->setData(Qt::UserRole, messageId.m_id);
-
-                QString htmlText = QString::fromStdString(username) + "<br>" +
-                                   QString::fromStdString(message) + "<br>" +
-                                   QString::fromStdString(std::to_string(hour)) + ':' +
-                                   QString::fromStdString(std::to_string(minute));
-
-                textBrowser->setHtml(htmlText);
-                newItem->setSizeHint(textBrowser->sizeHint());
-
-                ui->m_chatRoomArea->addItem(newItem);
-                ui->m_chatRoomArea->setItemWidget(newItem, textBrowser);
-
-
-                break;
+                if (ui->m_chatRoomList->item(i)->data(Qt::UserRole) == chatRoomId.m_id)
+                {
+                    showMessage(messageId, username,message, hour, minute);
+                    break;
+                }
             }
         }
     });
@@ -169,7 +155,6 @@ void MainWindow::configureUI()
     ui->TextUsername->setStyleSheet(style);
     ui->Username->setStyleSheet(style);
     ui->Exit->setStyleSheet(style);
-    ui->Join->setStyleSheet(style);
     ui->m_chatRoomArea->setStyleSheet(style);
     ui->SaveSettings->setStyleSheet(style);
     ui->UserMessage->setStyleSheet(style);
@@ -269,23 +254,31 @@ void MainWindow::doUpdateChatRoomRecords(ChatRoomId chatRoomId)
     ui->m_chatRoomArea->clear();
     for (const auto& [key, record] : chatRoomData.m_records)
     {
-        QListWidgetItem *newItem = new QListWidgetItem;
-        QTextBrowser *textBrowser = new QTextBrowser;
-        newItem->setData(Qt::UserRole, record.m_messageId.m_id);
-
         int year, month, day, hour, minute, second;
         parseUtcTime(record.m_time, year, month, day, hour, minute, second);
-
-        QString htmlText = QString::fromStdString(" ") + "<br>" +
-                           QString::fromStdString(record.m_text) + "<br>" +
-                           QString::fromStdString(std::to_string(hour)) + ':' +
-                           QString::fromStdString(std::to_string(minute));
-
-        textBrowser->setHtml(htmlText);
-        newItem->setSizeHint(textBrowser->sizeHint());
-
-        ui->m_chatRoomArea->insertItem(0, newItem);
-        ui->m_chatRoomArea->setItemWidget(newItem, textBrowser);
+        showMessage(record.m_messageId, record.m_username, record.m_text, hour, minute);
     }
+}
+
+void MainWindow::showMessage(MessageId messageId, const std::string& username, const std::string& message, uint64_t hour, uint64_t minute)
+{
+    QListWidgetItem *newItem = new QListWidgetItem;
+    QTextBrowser *textBrowser = new QTextBrowser;
+    newItem->setData(Qt::UserRole, messageId.m_id);
+
+    QString htmlText = QString::fromStdString(username) + "<br>" +
+                       QString::fromStdString(message) + "<br>" +
+                       QString::fromStdString(std::to_string(hour)) + ':' +
+                       QString::fromStdString(std::to_string(minute));
+
+    textBrowser->setHtml(htmlText);
+    newItem->setSizeHint(textBrowser->sizeHint());
+
+    QSize size(200, 70);
+    newItem->setSizeHint(size);
+    textBrowser->setFixedSize(size);
+
+    ui->m_chatRoomArea->addItem(newItem);
+    ui->m_chatRoomArea->setItemWidget(newItem, textBrowser);
 }
 

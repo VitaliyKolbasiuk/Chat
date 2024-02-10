@@ -449,7 +449,7 @@ inline ChatRoomRecordPacket* createChatRoomRecordPacket(ChatRoomId chatRoomId, c
 
     for (const auto& record : records)
     {
-        bufferSize += sizeof(record.m_time) + sizeof(uint16_t) + record.m_text.size() + sizeof(record.m_userId) + sizeof(MessageId);
+        bufferSize += sizeof(record.m_time) + sizeof(uint16_t) + record.m_text.size() + sizeof(record.m_userId) + sizeof(MessageId) + sizeof(uint8_t) + record.m_username.size();
     }
 
     auto* buffer = new uint8_t[bufferSize];
@@ -482,6 +482,12 @@ inline ChatRoomRecordPacket* createChatRoomRecordPacket(ChatRoomId chatRoomId, c
 
         *reinterpret_cast<UserId*>(ptr) = record.m_userId;
         ptr += sizeof(UserId);
+
+        *reinterpret_cast<uint8_t*>(ptr) = record.m_username.size();
+        ptr += sizeof(uint8_t);
+
+        std::memcpy(ptr, record.m_username.c_str(), record.m_username.size());
+        ptr += record.m_username.size();
     }
 
     return reinterpret_cast<ChatRoomRecordPacket*>(buffer);
@@ -519,7 +525,14 @@ inline std::vector<ChatRoomRecord> parseChatRoomRecordPacket(const uint8_t* buff
 
         UserId userId = *reinterpret_cast<const UserId*>(ptr);
         ptr += sizeof(UserId);
-        records.emplace_back(messageId, recordsTime, userId, message);
+
+        int usernameSize = *reinterpret_cast<const uint8_t*>(ptr);
+        ptr += sizeof(uint8_t);
+
+        std::string username(reinterpret_cast<const char*>(ptr), usernameSize);
+        ptr += usernameSize;
+
+        records.emplace_back(messageId, recordsTime, userId, message, username);
     }
 
     return records;

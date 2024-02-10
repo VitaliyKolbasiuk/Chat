@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1063</width>
-    <height>750</height>
+    <width>751</width>
+    <height>735</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,9 +17,9 @@
    <widget class="QLabel" name="Username">
     <property name="geometry">
      <rect>
-      <x>500</x>
-      <y>650</y>
-      <width>81</width>
+      <x>200</x>
+      <y>640</y>
+      <width>80</width>
       <height>31</height>
      </rect>
     </property>
@@ -27,25 +27,12 @@
      <string>Username:</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="Join">
-    <property name="geometry">
-     <rect>
-      <x>720</x>
-      <y>630</y>
-      <width>131</width>
-      <height>61</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Join</string>
-    </property>
-   </widget>
    <widget class="QLineEdit" name="TextUsername">
     <property name="geometry">
      <rect>
-      <x>580</x>
-      <y>650</y>
-      <width>121</width>
+      <x>280</x>
+      <y>640</y>
+      <width>120</width>
       <height>31</height>
      </rect>
     </property>
@@ -53,9 +40,9 @@
    <widget class="QLineEdit" name="UserMessage">
     <property name="geometry">
      <rect>
-      <x>360</x>
-      <y>450</y>
-      <width>441</width>
+      <x>180</x>
+      <y>500</y>
+      <width>440</width>
       <height>61</height>
      </rect>
     </property>
@@ -63,9 +50,9 @@
    <widget class="QPushButton" name="SendMessage">
     <property name="geometry">
      <rect>
-      <x>810</x>
-      <y>450</y>
-      <width>131</width>
+      <x>620</x>
+      <y>500</y>
+      <width>130</width>
       <height>61</height>
      </rect>
     </property>
@@ -76,9 +63,9 @@
    <widget class="QPushButton" name="SaveSettings">
     <property name="geometry">
      <rect>
-      <x>950</x>
-      <y>600</y>
-      <width>111</width>
+      <x>400</x>
+      <y>640</y>
+      <width>110</width>
       <height>41</height>
      </rect>
     </property>
@@ -89,9 +76,9 @@
    <widget class="QPushButton" name="Exit">
     <property name="geometry">
      <rect>
-      <x>950</x>
-      <y>640</y>
-      <width>111</width>
+      <x>640</x>
+      <y>620</y>
+      <width>110</width>
       <height>61</height>
      </rect>
     </property>
@@ -102,9 +89,9 @@
    <widget class="QPushButton" name="m_CreateRoom">
     <property name="geometry">
      <rect>
-      <x>200</x>
-      <y>480</y>
-      <width>81</width>
+      <x>20</x>
+      <y>500</y>
+      <width>80</width>
       <height>31</height>
      </rect>
     </property>
@@ -130,29 +117,29 @@
    <widget class="QListWidget" name="m_chatRoomList">
     <property name="geometry">
      <rect>
-      <x>200</x>
-      <y>170</y>
-      <width>161</width>
-      <height>341</height>
+      <x>20</x>
+      <y>10</y>
+      <width>160</width>
+      <height>491</height>
      </rect>
     </property>
    </widget>
    <widget class="QListWidget" name="m_chatRoomArea">
     <property name="geometry">
      <rect>
-      <x>360</x>
-      <y>170</y>
-      <width>441</width>
-      <height>281</height>
+      <x>180</x>
+      <y>10</y>
+      <width>440</width>
+      <height>491</height>
      </rect>
     </property>
    </widget>
    <widget class="QPushButton" name="m_connectToChatRoomBtn">
     <property name="geometry">
      <rect>
-      <x>210</x>
-      <y>610</y>
-      <width>181</width>
+      <x>10</x>
+      <y>620</y>
+      <width>180</width>
       <height>71</height>
      </rect>
     </property>
@@ -163,9 +150,9 @@
    <widget class="QPushButton" name="m_deleteRoom">
     <property name="geometry">
      <rect>
-      <x>280</x>
-      <y>480</y>
-      <width>81</width>
+      <x>100</x>
+      <y>500</y>
+      <width>80</width>
       <height>31</height>
      </rect>
     </property>
@@ -180,7 +167,6 @@
     </property>
    </widget>
    <zorder>Username</zorder>
-   <zorder>Join</zorder>
    <zorder>TextUsername</zorder>
    <zorder>UserMessage</zorder>
    <zorder>SendMessage</zorder>
@@ -197,7 +183,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1063</width>
+     <width>751</width>
      <height>22</height>
     </rect>
    </property>

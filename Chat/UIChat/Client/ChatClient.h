@@ -46,7 +46,7 @@ struct ChatRoomData{
     {
         for (const auto& record : records)
         {
-            m_records[record.m_messageId.m_id] = {record.m_messageId, record.m_time, record.m_userId, {}, record.m_text};
+            m_records[record.m_messageId.m_id] = {record.m_messageId, record.m_time, record.m_userId, record.m_username, record.m_text};
         }
     }
 
