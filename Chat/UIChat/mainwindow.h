@@ -22,8 +22,12 @@ public:
     void init();
     void showMessage(MessageId messageId, const std::string& username, const std::string& message, uint64_t hour, uint64_t minute);
 
+protected:
+    void keyReleaseEvent(QKeyEvent *event) override;
+
 private:
     void doUpdateChatRoomRecords(ChatRoomId chatRoomId);
+    void onEnterKeyReleased();
 
 private slots:
 

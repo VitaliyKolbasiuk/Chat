@@ -1,8 +1,5 @@
-
 #include "ChatRoomConnect.h"
 #include "ui_ChatRoomConnect.h"
-
-#include <QDebug>
 
 ChatRoomConnect::ChatRoomConnect(ChatClient& chatClient, QWidget *parent) :
         QDialog(parent),

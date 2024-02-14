@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cereal/types/string.hpp>
-#include <array>
 
 #include "Types.h"
 

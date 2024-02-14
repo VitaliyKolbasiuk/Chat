@@ -1,9 +1,3 @@
-//
-// Created by vitaliykolbasiuk on 11.11.23.
-//
-
-// You may need to build the project (run Qt uic code generator) to get "ui_SettingsDialog.h" resolved
-
 #include "SettingsDialog.h"
 #include "ui_SettingsDialog.h"
 #include <QDebug>

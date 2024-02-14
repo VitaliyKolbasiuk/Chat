@@ -1,8 +1,5 @@
-//
-// Created by vitaliykolbasiuk on 16.11.23.
-//
-
 #pragma once
+
 #include <cereal/types/array.hpp>
 #include <QDebug>
 

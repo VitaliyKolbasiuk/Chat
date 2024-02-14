@@ -1,7 +1,3 @@
-//
-// Created by vitaliykolbasiuk on 11.11.23.
-//
-
 #ifndef CHAT_SETTINGSDIALOG_H
 #define CHAT_SETTINGSDIALOG_H
 
@@ -28,6 +24,5 @@ private slots:
 private:
     Ui::SettingsDialog *ui;
 };
-
 
 #endif //CHAT_SETTINGSDIALOG_H

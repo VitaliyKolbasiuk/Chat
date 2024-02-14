@@ -1,9 +1,7 @@
 #pragma once
-#include <iostream>
+
 #include <boost/asio.hpp>
-#include <memory>
-#include "../Client/ClientInterfaces.h"
-#include "QDebug"
+#include "ClientInterfaces.h"
 #include "Protocol.h"
 
 using namespace boost::asio;

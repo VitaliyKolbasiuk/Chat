@@ -4,13 +4,10 @@
 #define FIXEDINT_H_INCLUDED
 
 #include <cereal/archives/binary.hpp>
-#include <cereal/types/array.hpp>
 #include <fstream>
-#include <QDebug>
 #include <QUuid>
 
 #include "ed25519/src/ed25519.h"
-#include "SettingsDialog.h"
 
 void Settings::generateKeys()
 {

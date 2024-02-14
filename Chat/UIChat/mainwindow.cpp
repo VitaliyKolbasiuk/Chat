@@ -11,8 +11,8 @@
 #include "DeleteChatRoomDialog.h"
 #include "LeaveChatRoomDialog.h"
 
-#include <QDir>
 #include <QTextBrowser>
+#include <QKeyEvent>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainWindow)
 {
@@ -123,6 +123,8 @@ void MainWindow::init()
 
 
 
+
+
     //qDebug() << QDir::homePath();
     //system("dir");
     ui->TextUsername->setText(QString::fromStdString(m_settings->m_username));
@@ -209,7 +211,8 @@ void MainWindow::on_m_deleteRoomBtn_released()
             leaveChatRoomDialog.setModal(true);
             leaveChatRoomDialog.exec();
         }
-        //m_chatClient->sendDeleteChatRoomRequest(static_cast<ChatRoomId>(ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toUInt()));
+
+
     }
 }
 
@@ -266,10 +269,13 @@ void MainWindow::showMessage(MessageId messageId, const std::string& username, c
     QTextBrowser *textBrowser = new QTextBrowser;
     newItem->setData(Qt::UserRole, messageId.m_id);
 
+    std::string hourStr = hour > 9 ? std::to_string(hour) : '0' + std::to_string(hour);
+    std::string minuteStr = minute > 9 ? std::to_string(minute) : '0' + std::to_string(minute);
+
     QString htmlText = QString::fromStdString(username) + "<br>" +
                        QString::fromStdString(message) + "<br>" +
-                       QString::fromStdString(std::to_string(hour)) + ':' +
-                       QString::fromStdString(std::to_string(minute));
+                       QString::fromStdString(hourStr) + ':' +
+                       QString::fromStdString(minuteStr);
 
     textBrowser->setHtml(htmlText);
     newItem->setSizeHint(textBrowser->sizeHint());
@@ -281,4 +287,26 @@ void MainWindow::showMessage(MessageId messageId, const std::string& username, c
     ui->m_chatRoomArea->addItem(newItem);
     ui->m_chatRoomArea->setItemWidget(newItem, textBrowser);
 }
+
+void MainWindow::keyReleaseEvent(QKeyEvent *event)
+{
+
+    if (event->key() == Qt::Key_Return)
+    {
+        onEnterKeyReleased();
+    }
+
+    QMainWindow::keyReleaseEvent(event);
+}
+
+void MainWindow::onEnterKeyReleased()
+{
+    if (ui->UserMessage->hasFocus())
+    {
+        on_SendMessage_released();
+    }
+}
+
+
+
 

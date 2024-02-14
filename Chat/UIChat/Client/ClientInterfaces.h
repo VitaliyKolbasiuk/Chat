@@ -1,9 +1,4 @@
 #pragma once
-#include <iostream>
-#include <boost/asio.hpp>
-
-using namespace boost::asio;
-using ip::tcp;
 
 class IChatClient
 {

@@ -1,7 +1,3 @@
-//
-// Created by vitaliykolbasiuk on 27.01.24.
-//
-
 #ifndef CHAT_CHATROOMCONNECT_H
 #define CHAT_CHATROOMCONNECT_H
 

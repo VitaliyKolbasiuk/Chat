@@ -1,11 +1,3 @@
-#include <iostream>
-#include <list>
-#include <map>
-#include <optional>
-
-//#include "ChatInterfaces.h"
-//#include "Protocol.h"
-//#include "Utils.h"
 #include "ServerSession.h"
 #include "Types.h"
 
@@ -38,7 +30,6 @@ struct ChatRoom
 
 class ChatModel: public IChatModel
 {
-    // TODO remove user when disconnects
     std::map<Key, std::shared_ptr<UserInfo>> m_users;
     std::map<ChatRoomId, ChatRoom> m_chatRooms;
     IChatDatabase& m_database;

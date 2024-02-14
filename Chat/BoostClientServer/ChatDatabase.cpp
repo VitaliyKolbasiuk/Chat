@@ -1,13 +1,7 @@
-#include "ChatInterfaces.h"
-#include "Types.h"
 #include "ServerSession.h"
-#include "Protocol.h"
 
-#include <iostream>
-#include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
-#include <filesystem>
 
 struct Query{
     QSqlQuery m_query;

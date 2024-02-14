@@ -1,20 +1,9 @@
 #pragma once
 
-#include <iostream>
-#include <thread>
-#include <string>
-#include <boost/tokenizer.hpp>
-#include <QObject>
-#include <ctime>
-#include <queue>
 #include <QTimer>
 
-#include "ClientInterfaces.h"
 #include "TcpClient.h"
-//#include "../Log.h"
-
 #include "Settings.h"
-#include "ed25519/src/ed25519.h"
 
 struct ChatRoomData{
     ChatRoomId  m_id;
@@ -190,7 +179,7 @@ public:
                 std::string message = parseTextMessagePacket(packet, packetSize ,time, chatRoomId, messageId, userId, username);
 
                 m_chatRoomMap[chatRoomId].addMessage({messageId, (std::time_t)time, userId, message});
-                emit OnMessageReceived(chatRoomId, messageId, username, message, time);    // TODO
+                emit OnMessageReceived(chatRoomId, messageId, username, message, time);
                 break;
             }
             case ChatRoomRecordPacket::type:
