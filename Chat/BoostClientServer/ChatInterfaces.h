@@ -48,6 +48,7 @@ public:
     virtual bool getUserId(const Key& publicKey, int& userId) = 0;
     virtual void onConnectToChatRoomMessage(const std::string& chatRoomName, Key userKey, std::weak_ptr<ServerSession> session) = 0;
     virtual void leaveChatRoom(ChatRoomId chatRoomId, Key userKey, bool onlyLeave) = 0;
+    virtual void deleteMessage(ChatRoomId chatRoomId, MessageId messageId, Key userKey, std::function<void()>) = 0;
 };
 
 IChatDatabase* createDatabase(IChatModel& chat);

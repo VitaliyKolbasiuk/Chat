@@ -432,6 +432,20 @@ public:
         return ownerKey == userKey;
     }
 
+    void deleteMessage(ChatRoomId chatRoomId, MessageId messageId, Key userKey, std::function<void()> func) override
+    {
+        Query query(m_db);
+
+        std::string chatRoomName = getChatRoomTableName(chatRoomId.m_id);
+        int userId;
+        getUserId(userKey, userId);
+
+        query.prepare("DELETE FROM " + chatRoomName + " WHERE id = " + std::to_string(messageId.m_id) + " AND senderIdRef = " + std::to_string(userId) + ";");
+        if (query.exec())
+        {
+            func();
+        }
+    }
 
 
     void test() override

@@ -62,6 +62,8 @@ signals:
 
     void updateChatRoomRecords(ChatRoomId chatRoomId);
 
+    void onMessageDeleted(ChatRoomId chatRoomId, MessageId messageId);
+
 private:
     std::weak_ptr<TcpClient>  m_tcpClient;
     std::string m_chatClientName;
@@ -198,6 +200,30 @@ public:
 
                 break;
             }
+            case DeleteMessageResponse::type:
+            {
+                const DeleteMessageResponse response = *(reinterpret_cast<const DeleteMessageResponse*>(packet));
+
+                if (response.m_isDeleted)
+                {
+                    m_chatRoomMap[response.m_chatRoomId].m_records.erase(response.m_messageId.m_id);
+                    emit onMessageDeleted(response.m_chatRoomId, response.m_messageId);
+                }
+
+                break;
+            }
+        }
+    }
+
+    void deleteMessage(ChatRoomId chatRoomId, MessageId messageId)
+    {
+        PacketHeader<DeleteMessageRequest> packet;
+        packet.m_packet.m_chatRoomId = chatRoomId;
+        packet.m_packet.m_messageId  = messageId;
+
+        if (auto tcpClient = m_tcpClient.lock(); tcpClient)
+        {
+            tcpClient->sendPacket(packet);
         }
     }
 

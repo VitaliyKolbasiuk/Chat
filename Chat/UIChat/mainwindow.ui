@@ -6,80 +6,44 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>751</width>
-    <height>735</height>
+    <width>746</width>
+    <height>636</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLabel" name="Username">
-    <property name="geometry">
-     <rect>
-      <x>200</x>
-      <y>640</y>
-      <width>80</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Username:</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="TextUsername">
-    <property name="geometry">
-     <rect>
-      <x>280</x>
-      <y>640</y>
-      <width>120</width>
-      <height>31</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QLineEdit" name="UserMessage">
     <property name="geometry">
      <rect>
       <x>180</x>
       <y>500</y>
-      <width>440</width>
+      <width>561</width>
       <height>61</height>
      </rect>
     </property>
    </widget>
-   <widget class="QPushButton" name="SendMessage">
+   <widget class="QPushButton" name="m_settingsBtn">
     <property name="geometry">
      <rect>
-      <x>620</x>
-      <y>500</y>
-      <width>130</width>
-      <height>61</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Send</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="SaveSettings">
-    <property name="geometry">
-     <rect>
-      <x>400</x>
-      <y>640</y>
+      <x>520</x>
+      <y>560</y>
       <width>110</width>
-      <height>41</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>SaveSettings</string>
+     <string>Settings</string>
     </property>
    </widget>
    <widget class="QPushButton" name="Exit">
     <property name="geometry">
      <rect>
-      <x>640</x>
-      <y>620</y>
+      <x>630</x>
+      <y>560</y>
       <width>110</width>
-      <height>61</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
@@ -90,7 +54,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>500</y>
+      <y>560</y>
       <width>80</width>
       <height>31</height>
      </rect>
@@ -118,9 +82,9 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>10</y>
+      <y>40</y>
       <width>160</width>
-      <height>491</height>
+      <height>521</height>
      </rect>
     </property>
    </widget>
@@ -129,7 +93,7 @@
      <rect>
       <x>180</x>
       <y>10</y>
-      <width>440</width>
+      <width>561</width>
       <height>491</height>
      </rect>
     </property>
@@ -137,11 +101,16 @@
    <widget class="QPushButton" name="m_connectToChatRoomBtn">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>620</y>
-      <width>180</width>
-      <height>71</height>
+      <x>20</x>
+      <y>10</y>
+      <width>161</width>
+      <height>31</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>9</pointsize>
+     </font>
     </property>
     <property name="text">
      <string>Connect to Chat Room</string>
@@ -151,7 +120,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>500</y>
+      <y>560</y>
       <width>80</width>
       <height>31</height>
      </rect>
@@ -166,24 +135,35 @@
      <string>-</string>
     </property>
    </widget>
-   <zorder>Username</zorder>
-   <zorder>TextUsername</zorder>
+   <widget class="QPushButton" name="m_deleteMessageBtn">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>560</y>
+      <width>111</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Delete</string>
+    </property>
+   </widget>
    <zorder>UserMessage</zorder>
-   <zorder>SendMessage</zorder>
-   <zorder>SaveSettings</zorder>
+   <zorder>m_settingsBtn</zorder>
    <zorder>Exit</zorder>
    <zorder>m_chatRoomList</zorder>
    <zorder>m_chatRoomArea</zorder>
    <zorder>m_connectToChatRoomBtn</zorder>
    <zorder>m_CreateRoom</zorder>
    <zorder>m_deleteRoom</zorder>
+   <zorder>m_deleteMessageBtn</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>751</width>
+     <width>746</width>
      <height>22</height>
     </rect>
    </property>

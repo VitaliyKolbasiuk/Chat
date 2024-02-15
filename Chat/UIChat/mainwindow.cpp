@@ -107,7 +107,7 @@ void MainWindow::init()
     });
 
     connect(ui->m_chatRoomList, &QListWidget::currentItemChanged, this, [this](const QListWidgetItem* item){
-        if (item != 0) {
+        if (item != nullptr) {
             QVariant data = item->data(Qt::UserRole);
             int chatRoomId = data.toInt();
         }
@@ -121,19 +121,46 @@ void MainWindow::init()
 
     connect(ui->m_deleteRoom, &QPushButton::released, this, &MainWindow::on_m_deleteRoomBtn_released);
 
+    connect(ui->m_chatRoomArea, &QListWidget::currentItemChanged, this, [this](const QListWidgetItem* item){
+        if (item != nullptr)
+        {
+            ui->m_deleteMessageBtn->setVisible(true);
+        }
+        else
+        {
+            ui->m_deleteMessageBtn->setVisible(false);
+        }
+    });
 
+    connect(ui->m_deleteMessageBtn, &QPushButton::released, this, [this](){
+        MessageId  messageId  = ui->m_chatRoomArea->currentItem()->data(Qt::UserRole).toUInt();
+        ChatRoomId chatRoomId = static_cast<ChatRoomId>(ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toUInt());
 
+        m_chatClient->deleteMessage(chatRoomId, messageId);
+    });
 
+    connect(m_chatClient.get(), &ChatClient::onMessageDeleted, this, [this](ChatRoomId chatRoomId, MessageId messageId){
+        if (ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toUInt() == chatRoomId.m_id)
+        {
+            for (int i = 0; i < ui->m_chatRoomArea->count(); ++i) {
+                QListWidgetItem *currentItem = ui->m_chatRoomArea->item(i);
+                int userData = currentItem->data(Qt::UserRole).toUInt();
+
+                if (userData == messageId.m_id) {
+                    ui->m_chatRoomArea->takeItem(i);
+                    break;
+                }
+            }
+        }
+    });
 
     //qDebug() << QDir::homePath();
     //system("dir");
-    ui->TextUsername->setText(QString::fromStdString(m_settings->m_username));
+    setWindowTitle(QString::fromStdString(m_settings->m_username));
 
     m_tcpClient = std::make_shared<TcpClient>(m_ioContext1, m_chatClient);
     m_chatClient->setTcpClient(m_tcpClient);
     m_tcpClient->connect("127.0.0.1", 1234);
-
-    //m_chatClient->sendUserMessage(CONNECT_CMD ";" + arrayToHexString(m_settings->m_userKey) + ";" + arrayToHexString(m_settings->m_deviceKey) + ";");
 
     std::thread ([this]{
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard(m_ioContext1.get_executor());
@@ -141,6 +168,7 @@ void MainWindow::init()
         qDebug() << "Context has stopped";
     }).detach();
 
+    ui->m_deleteMessageBtn->setVisible(false);
 }
 
 MainWindow::~MainWindow()
@@ -154,13 +182,9 @@ void MainWindow::configureUI()
     QString style = "background-color: #282e33; color : #e9f2f4; font : bold; QLabel { text-align: center; }";
 
     ui->centralwidget->setStyleSheet("background-color: #18191d");
-    ui->TextUsername->setStyleSheet(style);
-    ui->Username->setStyleSheet(style);
     ui->Exit->setStyleSheet(style);
     ui->m_chatRoomArea->setStyleSheet(style);
-    ui->SaveSettings->setStyleSheet(style);
     ui->UserMessage->setStyleSheet(style);
-    ui->SendMessage->setStyleSheet(style);
     ui->m_CreateRoom->setStyleSheet("background-color: #282e33; color : lightgreen; font : bold; QLabel { text-align: center; }");
     ui->m_deleteRoom->setStyleSheet("background-color: #282e33; color : red; font : bold; QLabel { text-align: center; }");
 
@@ -175,8 +199,8 @@ void MainWindow::onChatRoomListReceived()
 
 void MainWindow::on_SaveSettings_released()
 {
-    m_settings->m_username = ui->TextUsername->text().toStdString();
-    m_settings->saveSettings();
+    //m_settings->m_username = ui->TextUsername->text().toStdString();
+    //m_settings->saveSettings();
 }
 
 

@@ -272,6 +272,44 @@ public:
 
                 break;
             }
+            case DeleteMessageRequest::type:
+            {
+                const DeleteMessageRequest packet = *(reinterpret_cast<const DeleteMessageRequest*>(readBuffer));
+
+                if (auto sessionPtr = session.lock(); sessionPtr)
+                {
+                    boost::asio::post(gDatabaseIoContext, [=, this]()
+                    {
+                        m_database.deleteMessage(packet.m_chatRoomId, packet.m_messageId, sessionPtr->m_userKey, [=, this](){
+                            boost::asio::post(gServerIoContext, [=, this](){
+                                PacketHeader<DeleteMessageResponse> response;
+                                response.m_packet.m_isDeleted = true;
+                                response.m_packet.m_chatRoomId = packet.m_chatRoomId;
+                                response.m_packet.m_messageId = packet.m_messageId;
+
+                                auto clients = m_chatRooms[packet.m_chatRoomId].m_clients;
+                                for (const auto& [userKey, client] : clients)
+                                {
+                                    if (auto clientPtr = client.lock(); clientPtr)
+                                    {
+                                        for (const auto& connection : clientPtr->m_connections)
+                                        {
+                                            if (auto clientSession = connection.m_session.lock(); clientSession)
+                                            {
+                                                clientSession->sendPacket(response);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                sessionPtr->sendPacket(response);
+                            });
+                        });
+                    });
+                }
+
+                break;
+            }
         }
     }
 

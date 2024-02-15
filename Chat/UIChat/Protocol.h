@@ -550,6 +550,23 @@ struct SendDeleteChatRoomRequest
     bool       m_onlyLeave;
 };
 
+struct DeleteMessageRequest
+{
+    enum { type = 108};
+
+    ChatRoomId m_chatRoomId;
+    MessageId  m_messageId;
+};
+
+struct DeleteMessageResponse
+{
+    enum { type = 109};
+
+    bool m_isDeleted;
+    ChatRoomId m_chatRoomId;
+    MessageId  m_messageId;
+};
+
 struct TypeMap{
     std::map<int, std::string> m_typeMap;
     TypeMap(){
@@ -566,6 +583,7 @@ struct TypeMap{
         m_typeMap[ConnectChatRoom::type] = "<ConnectChatRoom>";
         m_typeMap[ConnectChatRoomFailed::type] = "<ConnectChatRoomFailed>";
         m_typeMap[SendDeleteChatRoomRequest::type] = "<SendDeleteChatRoomRequest>";
+        m_typeMap[DeleteMessageRequest::type] = "<DeleteMessageRequest>";
     }
 };
 
