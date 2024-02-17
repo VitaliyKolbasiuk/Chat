@@ -14,7 +14,13 @@ QT_END_NAMESPACE
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
+    Ui::MainWindow *ui;
     Settings* m_settings;
+
+    std::shared_ptr<ChatClient> m_chatClient;
+    io_context                  m_ioContext1;
+    std::shared_ptr<TcpClient>  m_tcpClient;
+    std::optional<MessageId>    m_editedMessageId;
 public:
 
     MainWindow(QWidget *parent = nullptr);
@@ -28,6 +34,7 @@ protected:
 private:
     void doUpdateChatRoomRecords(ChatRoomId chatRoomId);
     void onEnterKeyReleased();
+    void configureUI();
 
 private slots:
 
@@ -45,13 +52,6 @@ private slots:
 
     void onChatRoomListReceived();
 
-private:
-    Ui::MainWindow *ui;
-
-    std::shared_ptr<ChatClient> m_chatClient;
-    io_context m_ioContext1;
-    std::shared_ptr<TcpClient>  m_tcpClient;
-
-    void configureUI();
+    void onMessageEdited();
 };
 #endif // MAINWINDOW_H

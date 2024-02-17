@@ -294,7 +294,6 @@ inline SendTextMessagePacket* createSendTextMessagePacket(const std::string& mes
     auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
     header->setPacketType(SendTextMessagePacket::type);
     header->setPacketLength((uint32_t) bufferSize - sizeof(PacketHeaderBase));
-    qDebug() << header->packetLength() << sizeof(uint64_t) + sizeof(chatRoomId) + sizeof(Key) + message.size() + 1;
 
     auto* ptr = buffer + sizeof(*header);
 
@@ -560,12 +559,140 @@ struct DeleteMessageRequest
 
 struct DeleteMessageResponse
 {
-    enum { type = 109};
+    enum { type = 7};
 
     bool m_isDeleted;
     ChatRoomId m_chatRoomId;
     MessageId  m_messageId;
 };
+
+struct EditMessageRequest
+{
+    enum { type = 109};
+
+    void operator delete(void *ptr)
+    {
+        delete[] reinterpret_cast<uint8_t*>(ptr);
+    }
+
+    uint16_t packetLength() const
+    {
+        return reinterpret_cast<const PacketHeaderBase *>(this)->packetLength() + sizeof(PacketHeaderBase);
+    }
+
+    uint16_t packetType() const
+    {
+        return reinterpret_cast<const PacketHeaderBase *>(this)->packetType();
+    }
+};
+
+inline EditMessageRequest* createEditMessageRequestPacket(ChatRoomId chatRoomId, MessageId messageId, const std::string& message)
+{
+    size_t bufferSize = sizeof(PacketHeaderBase) + sizeof(ChatRoomId) + sizeof(MessageId) + message.size() + 1;
+
+    auto* buffer = new uint8_t[bufferSize];
+
+    auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
+    header->setPacketType(EditMessageRequest::type);
+    header->setPacketLength((uint32_t) bufferSize - sizeof(PacketHeaderBase));
+
+    auto* ptr = buffer + sizeof(*header);
+
+    *reinterpret_cast<ChatRoomId*>(ptr) = chatRoomId;
+    ptr += sizeof(ChatRoomId);
+
+    *reinterpret_cast<MessageId*>(ptr) = messageId;
+    ptr += sizeof(MessageId);
+
+    std::memcpy(ptr, message.c_str(), message.size() + 1);
+
+    return reinterpret_cast<EditMessageRequest*>(buffer);
+}
+
+inline std::string parseEditMessageRequestPacket(const uint8_t* buffer, size_t bufferSize, ChatRoomId& chatRoomId, MessageId& messageId)
+{
+    auto* ptr = buffer;
+
+    chatRoomId = *reinterpret_cast<const ChatRoomId*>(ptr);
+    ptr += sizeof(ChatRoomId);
+
+    messageId = *reinterpret_cast<const MessageId*>(ptr);
+    ptr += sizeof(MessageId);
+
+    std::string message(reinterpret_cast<const char*>(ptr), buffer + bufferSize - ptr - 1);
+
+    return message;
+}
+
+struct EditMessageResponse
+{
+    enum { type = 8};
+
+    void operator delete(void *ptr)
+    {
+        delete[] reinterpret_cast<uint8_t*>(ptr);
+    }
+
+    uint16_t packetLength() const
+    {
+        return reinterpret_cast<const PacketHeaderBase *>(this)->packetLength() + sizeof(PacketHeaderBase);
+    }
+
+    uint16_t packetType() const
+    {
+        return reinterpret_cast<const PacketHeaderBase *>(this)->packetType();
+    }
+};
+
+inline EditMessageResponse* createEditMessageResponsePacket(ChatRoomId chatRoomId, MessageId messageId, const std::string& username, const std::string& message)
+{
+    size_t bufferSize = sizeof(PacketHeaderBase) + sizeof(ChatRoomId) + sizeof(MessageId) + sizeof(uint8_t) + username.size() + message.size() + 1; // uint8_t - username size
+
+    auto* buffer = new uint8_t[bufferSize];
+
+    auto* header = reinterpret_cast<PacketHeaderBase*>(buffer);
+    header->setPacketType(EditMessageResponse::type);
+    header->setPacketLength((uint32_t) bufferSize - sizeof(PacketHeaderBase));
+
+    auto* ptr = buffer + sizeof(*header);
+
+    *reinterpret_cast<ChatRoomId*>(ptr) = chatRoomId;
+    ptr += sizeof(ChatRoomId);
+
+    *reinterpret_cast<MessageId*>(ptr) = messageId;
+    ptr += sizeof(MessageId);
+
+    *reinterpret_cast<uint8_t*>(ptr) = username.size();
+    ptr += sizeof(uint8_t);
+
+    std::memcpy(ptr, username.c_str(), username.size());
+    ptr += username.size();
+
+    std::memcpy(ptr, message.c_str(), message.size() + 1);
+
+    return reinterpret_cast<EditMessageResponse*>(buffer);
+}
+
+inline std::string parseEditMessageResponsePacket(const uint8_t* buffer, size_t bufferSize, ChatRoomId& chatRoomId, MessageId& messageId, std::string& username)
+{
+    auto* ptr = buffer;
+
+    chatRoomId = *reinterpret_cast<const ChatRoomId*>(ptr);
+    ptr += sizeof(ChatRoomId);
+
+    messageId = *reinterpret_cast<const MessageId*>(ptr);
+    ptr += sizeof(MessageId);
+
+    uint8_t usernameSize = *reinterpret_cast<const uint8_t*>(ptr);
+    ptr += sizeof(uint8_t);
+
+    username = std::string(reinterpret_cast<const char*>(ptr), usernameSize);
+    ptr += usernameSize;
+
+    std::string message(reinterpret_cast<const char*>(ptr), buffer + bufferSize - ptr - 1);
+
+    return message;
+}
 
 struct TypeMap{
     std::map<int, std::string> m_typeMap;
@@ -584,6 +711,8 @@ struct TypeMap{
         m_typeMap[ConnectChatRoomFailed::type] = "<ConnectChatRoomFailed>";
         m_typeMap[SendDeleteChatRoomRequest::type] = "<SendDeleteChatRoomRequest>";
         m_typeMap[DeleteMessageRequest::type] = "<DeleteMessageRequest>";
+        m_typeMap[EditMessageRequest::type] = "<EditMessageRequest>";
+        m_typeMap[EditMessageResponse::type] = "<EditMessageResponse>";
     }
 };
 

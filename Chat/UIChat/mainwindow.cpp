@@ -154,6 +154,39 @@ void MainWindow::init()
         }
     });
 
+    connect(ui->m_chatRoomArea, &QListWidget::itemDoubleClicked, this, [this](){
+        ui->UserMessage->setText(ui->m_chatRoomArea->currentItem()->data(Qt::EditRole).toString());
+        ui->UserMessage->setCursorPosition(ui->m_chatRoomArea->currentItem()->data(Qt::EditRole).toString().size());
+        m_editedMessageId = ui->m_chatRoomArea->currentItem()->data(Qt::UserRole).toUInt();
+    });
+
+    connect(m_chatClient.get(), &ChatClient::onMessageEdited, this, [this](ChatRoomId chatRoomId,
+                                                                           MessageId messageId,
+                                                                           const std::string& username,
+                                                                           const std::string& message)
+    {
+        if (ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toUInt() == chatRoomId.m_id)
+        {
+            for (int i = 0; i < ui->m_chatRoomArea->count(); ++i) {
+                QListWidgetItem *currentItem = ui->m_chatRoomArea->item(i);
+                int userData = currentItem->data(Qt::UserRole).toUInt();
+
+                if (userData == messageId.m_id) {
+                    currentItem->setData(Qt::EditRole, QString::fromStdString(message));
+
+                    QTextBrowser *textBrowser = new QTextBrowser;
+                    QString htmlText = QString::fromStdString(username) + "<br>" +
+                                       QString::fromStdString(message) + "<br>" +
+                                       currentItem->data(Qt::ToolTipRole).toString();
+                    textBrowser->setText(htmlText);
+                    textBrowser->setFixedSize(QSize(ui->m_chatRoomArea->width() / 3, 70));
+                    ui->m_chatRoomArea->setItemWidget(currentItem, textBrowser);
+                    break;
+                }
+            }
+        }
+    });
+
     //qDebug() << QDir::homePath();
     //system("dir");
     setWindowTitle(QString::fromStdString(m_settings->m_username));
@@ -209,7 +242,7 @@ void MainWindow::on_SendMessage_released()
     std::string userMessage = ui->UserMessage->text().toStdString();
     if (!userMessage.empty())
     {
-        ChatRoomId chatRoomId((uint64_t)ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toULongLong());
+        ChatRoomId chatRoomId(static_cast<ChatRoomId>(ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toUInt()));
         auto* packet = createSendTextMessagePacket(userMessage, chatRoomId, m_settings->m_keyPair.m_publicKey);
         m_tcpClient->sendBufferedPacket<SendTextMessagePacket>(packet);
 
@@ -292,9 +325,12 @@ void MainWindow::showMessage(MessageId messageId, const std::string& username, c
     QListWidgetItem *newItem = new QListWidgetItem;
     QTextBrowser *textBrowser = new QTextBrowser;
     newItem->setData(Qt::UserRole, messageId.m_id);
+    newItem->setData(Qt::EditRole, QString::fromStdString(message));
+
 
     std::string hourStr = hour > 9 ? std::to_string(hour) : '0' + std::to_string(hour);
     std::string minuteStr = minute > 9 ? std::to_string(minute) : '0' + std::to_string(minute);
+    newItem->setData(Qt::ToolTipRole, QString::fromStdString(hourStr + ':' + minuteStr));
 
     QString htmlText = QString::fromStdString(username) + "<br>" +
                        QString::fromStdString(message) + "<br>" +
@@ -304,7 +340,7 @@ void MainWindow::showMessage(MessageId messageId, const std::string& username, c
     textBrowser->setHtml(htmlText);
     newItem->setSizeHint(textBrowser->sizeHint());
 
-    QSize size(200, 70);
+    QSize size(ui->m_chatRoomArea->width() / 3, 70);
     newItem->setSizeHint(size);
     textBrowser->setFixedSize(size);
 
@@ -327,8 +363,28 @@ void MainWindow::onEnterKeyReleased()
 {
     if (ui->UserMessage->hasFocus())
     {
-        on_SendMessage_released();
+        if (!m_editedMessageId)
+        {
+            on_SendMessage_released();
+        }
+        else
+        {
+            onMessageEdited();
+        }
+        m_editedMessageId.reset();
     }
+}
+
+void MainWindow::onMessageEdited()
+{
+    std::string editedMessage = ui->UserMessage->text().toStdString();
+    ChatRoomId chatRoomId(static_cast<ChatRoomId>(ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toUInt()));
+    MessageId  messageId(ui->m_chatRoomArea->currentItem()->data(Qt::UserRole).toUInt());
+    auto* packet = createEditMessageRequestPacket(chatRoomId, messageId, editedMessage);
+
+    m_tcpClient->sendBufferedPacket<EditMessageRequest>(packet);
+
+    ui->UserMessage->clear();
 }
 
 

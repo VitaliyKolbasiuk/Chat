@@ -302,7 +302,44 @@ public:
                                     }
                                 }
 
-                                sessionPtr->sendPacket(response);
+                                //sessionPtr->sendPacket(response);
+                            });
+                        });
+                    });
+                }
+
+                break;
+            }
+            case EditMessageRequest::type:
+            {
+                ChatRoomId  chatRoomId;
+                MessageId   messageId;
+                std::string editedMessage = parseEditMessageRequestPacket(readBuffer, packetSize, chatRoomId, messageId);
+
+                if (auto sessionPtr = session.lock(); sessionPtr)
+                {
+                    boost::asio::post(gDatabaseIoContext, [=, this, userKey = sessionPtr->m_userKey](){
+                        m_database.editMessage(chatRoomId, messageId, userKey, editedMessage, [=, this](){
+                            boost::asio::post(gServerIoContext, [=, this](){
+                                std::string senderUsername = m_users[sessionPtr->m_userKey]->m_username;
+
+                                auto clients = m_chatRooms[chatRoomId].m_clients;
+                                for (const auto& [userKey, client] : clients)
+                                {
+                                    if (auto clientPtr = client.lock(); clientPtr)
+                                    {
+                                        for (const auto& connection : clientPtr->m_connections)
+                                        {
+                                            if (auto clientSession = connection.m_session.lock(); clientSession)
+                                            {
+                                                EditMessageResponse* response = createEditMessageResponsePacket(chatRoomId, messageId, senderUsername, editedMessage);
+                                                clientSession->sendBufferedPacket(response);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                //sessionPtr->sendBufferedPacket(response);
                             });
                         });
                     });

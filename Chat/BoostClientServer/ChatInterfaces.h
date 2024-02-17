@@ -43,12 +43,13 @@ public:
     virtual ChatRoomInfoList getChatRoomList(const int& userUniqueKey) = 0;
     virtual void onUserConnected(const Key& publicKey, const Key& deviceKey, const std::string& nickname, std::function<void(const ChatRoomInfoList&)>) = 0;
     virtual void onRequestMessages(ChatRoomId chatRoomId, int messageNumber, MessageId messageId,  std::function<void(const std::vector<ChatRoomRecord>&)>) = 0;
-    virtual int createChatRoomTable(const std::string& chatRoomName, bool isPrivate, Key ownerPublicKey, std::weak_ptr<ServerSession> session) = 0;
+    virtual int createChatRoomTable(const std::string& chatRoomName, bool isPrivate, const Key& ownerPublicKey, std::weak_ptr<ServerSession> session) = 0;
     virtual uint32_t appendMessageToChatRoom(int chatRoomId, const Key& publicKey, uint64_t dataTime, const std::string& message, int& senderId) = 0;
     virtual bool getUserId(const Key& publicKey, int& userId) = 0;
-    virtual void onConnectToChatRoomMessage(const std::string& chatRoomName, Key userKey, std::weak_ptr<ServerSession> session) = 0;
-    virtual void leaveChatRoom(ChatRoomId chatRoomId, Key userKey, bool onlyLeave) = 0;
-    virtual void deleteMessage(ChatRoomId chatRoomId, MessageId messageId, Key userKey, std::function<void()>) = 0;
+    virtual void onConnectToChatRoomMessage(const std::string& chatRoomName, const Key& userKey, std::weak_ptr<ServerSession> session) = 0;
+    virtual void leaveChatRoom(ChatRoomId chatRoomId, const Key& userKey, bool onlyLeave) = 0;
+    virtual void deleteMessage(ChatRoomId chatRoomId, MessageId messageId, const Key& userKey, std::function<void()>) = 0;
+    virtual void editMessage(ChatRoomId chatRoomId, MessageId messageId, const Key& userKey, const std::string& editedMessage, std::function<void()>) = 0;
 };
 
 IChatDatabase* createDatabase(IChatModel& chat);

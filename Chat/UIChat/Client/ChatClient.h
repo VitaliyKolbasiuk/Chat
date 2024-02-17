@@ -64,6 +64,8 @@ signals:
 
     void onMessageDeleted(ChatRoomId chatRoomId, MessageId messageId);
 
+    void onMessageEdited(ChatRoomId chatRoomId, MessageId messageId, const std::string& username, const std::string& message);
+
 private:
     std::weak_ptr<TcpClient>  m_tcpClient;
     std::string m_chatClientName;
@@ -130,7 +132,6 @@ public:
 
                 for (const auto& chatRoomInfo : chatRoomList)
                 {
-                    qDebug() << toString(chatRoomInfo.m_ownerPublicKey) << ' ' << toString(m_settings.m_keyPair.m_publicKey);
                     m_chatRoomMap[ChatRoomId(chatRoomInfo.m_chatRoomId)] = ChatRoomData{ChatRoomId(chatRoomInfo.m_chatRoomId),
                                                                                         chatRoomInfo.m_chatRoomName,
                                                                                         chatRoomInfo.m_ownerPublicKey == m_settings.m_keyPair.m_publicKey};
@@ -211,6 +212,18 @@ public:
                 }
 
                 break;
+            }
+            case EditMessageResponse::type:
+            {
+                ChatRoomId  chatRoomId;
+                MessageId   messageId;
+                std::string username;
+                std::string editedMessage = parseEditMessageResponsePacket(packet, packetSize, chatRoomId, messageId, username);
+
+                emit onMessageEdited(chatRoomId, messageId, username, editedMessage);
+
+                m_chatRoomMap[chatRoomId].m_records[messageId.m_id].m_username = username;
+                m_chatRoomMap[chatRoomId].m_records[messageId.m_id].m_text = editedMessage;
             }
         }
     }
