@@ -32,7 +32,6 @@ bool Settings::loadSettings()
 {
     try{
         std::ifstream ios(settingsFileName() + "_keys", std::ios::binary);
-        qDebug() << (settingsFileName() + "_keys").c_str();
         cereal::BinaryInputArchive archive( ios );
         archive(*this);
         return true;

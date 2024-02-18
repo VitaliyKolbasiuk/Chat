@@ -2,7 +2,7 @@
 #define CHAT_SETTINGSDIALOG_H
 
 #include <QDialog>
-
+#include <Client/ChatClient.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class SettingsDialog; }
@@ -12,17 +12,19 @@ class SettingsDialog : public QDialog {
 Q_OBJECT
 
 public:
-    explicit SettingsDialog(QWidget *parent = nullptr);
+    explicit SettingsDialog(ChatClient& chatClient, bool isNewUser, QWidget *parent = nullptr);
 
     ~SettingsDialog() override;
 
 private slots:
-    void on_buttonBox_accepted();
+    void onSaveBtnReleased();
 
-    void on_buttonBox_rejected();
+    void onCancelBtnReleased();
 
 private:
-    Ui::SettingsDialog *ui;
+    Ui::SettingsDialog  *ui;
+    ChatClient&         m_chatClient;
+    std::optional<bool> m_isNewUser;
 };
 
 #endif //CHAT_SETTINGSDIALOG_H

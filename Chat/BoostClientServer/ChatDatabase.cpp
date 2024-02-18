@@ -430,6 +430,17 @@ public:
         return m_query.value(0).toBool();
     }
 
+    void changeUsername(const std::string newUsername, const Key& userKey, std::function<void()> func)
+    {
+        m_query.prepare("UPDATE UserCatalogue SET nickname = '" + newUsername + "' WHERE publicKey = '" + toString(userKey) + "';");
+        m_query.exec();
+
+        if (m_query.m_query.numRowsAffected() > 0)
+        {
+            func();
+        }
+    }
+
     void test() override
     {
 //        Query query(m_db);

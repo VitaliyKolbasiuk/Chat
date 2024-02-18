@@ -301,8 +301,6 @@ public:
                                         }
                                     }
                                 }
-
-                                //sessionPtr->sendPacket(response);
                             });
                         });
                     });
@@ -338,8 +336,23 @@ public:
                                         }
                                     }
                                 }
+                            });
+                        });
+                    });
+                }
 
-                                //sessionPtr->sendBufferedPacket(response);
+                break;
+            }
+            case ChangeUsernameRequest::type:
+            {
+                ChangeUsernameRequest request = *(reinterpret_cast<const ChangeUsernameRequest*>(readBuffer));
+
+                if (auto sessionPtr = session.lock(); sessionPtr)
+                {
+                    boost::asio::post(gDatabaseIoContext, [=, userKey = sessionPtr->m_userKey, this](){
+                        m_database.changeUsername(request.m_newUsername, sessionPtr->m_userKey, [=, this](){
+                            boost::asio::post(gServerIoContext, [=, this](){
+                                m_users[userKey]->m_username = request.m_newUsername;
                             });
                         });
                     });

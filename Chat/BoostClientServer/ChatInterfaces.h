@@ -50,6 +50,7 @@ public:
     virtual void leaveChatRoom(ChatRoomId chatRoomId, const Key& userKey, bool onlyLeave) = 0;
     virtual void deleteMessage(ChatRoomId chatRoomId, MessageId messageId, const Key& userKey, std::function<void()>) = 0;
     virtual void editMessage(ChatRoomId chatRoomId, MessageId messageId, const Key& userKey, const std::string& editedMessage, std::function<void()>) = 0;
+    virtual void changeUsername(const std::string newUsername, const Key& userKey, std::function<void()>) = 0;
 };
 
 IChatDatabase* createDatabase(IChatModel& chat);

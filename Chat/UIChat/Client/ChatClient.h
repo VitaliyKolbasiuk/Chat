@@ -304,6 +304,17 @@ public:
         }
     }
 
+    void changeUsername(const std::string& newUsername)
+    {
+        PacketHeader<ChangeUsernameRequest> packet;
+        std::memcpy(packet.m_packet.m_newUsername, newUsername.c_str(), newUsername.size() + 1);
+
+        if (auto tcpClient = m_tcpClient.lock(); tcpClient)
+        {
+            tcpClient->sendPacket(packet);
+        }
+    }
+
     ChatRoomMap& getChatRoomMap()
     {
         return m_chatRoomMap;

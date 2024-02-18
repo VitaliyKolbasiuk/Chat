@@ -26,7 +26,7 @@ void MainWindow::init()
     m_settings = new Settings();
     if (!m_settings->loadSettings())
     {
-        SettingsDialog settingsDialog;
+        SettingsDialog settingsDialog(*m_chatClient, true);
         settingsDialog.setModal(true);
         if (settingsDialog.exec() == QDialog::Accepted)
         {
@@ -241,8 +241,13 @@ void MainWindow::onChatRoomListReceived()
 
 void MainWindow::onSaveSettingsBtnReleased()
 {
-    //m_settings->m_username = ui->TextUsername->text().toStdString();
-    //m_settings->saveSettings();
+    SettingsDialog settingsDialog(*m_chatClient, false);
+    settingsDialog.setModal(true);
+    settingsDialog.exec();
+    if (m_settings->loadSettings())
+    {
+        setWindowTitle(QString::fromStdString(m_settings->m_username));
+    }
 }
 
 

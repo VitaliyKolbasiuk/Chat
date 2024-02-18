@@ -4,36 +4,52 @@
 #include "Settings.h"
 
 
-SettingsDialog::SettingsDialog(QWidget *parent) :
-QDialog(parent), ui(new Ui::SettingsDialog) {
+SettingsDialog::SettingsDialog(ChatClient& chatClient, bool isNewUser, QWidget *parent) :
+QDialog(parent), m_chatClient(chatClient), m_isNewUser(isNewUser), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
-    ui->m_serverAddress->setText("127.0.0.1:1234");
+
+    connect(ui->m_saveBtn, &QPushButton::released, this, &SettingsDialog::onSaveBtnReleased);
+    connect(ui->m_cancelBtn, &QPushButton::released, this, &SettingsDialog::onCancelBtnReleased);
 }
 
 SettingsDialog::~SettingsDialog() {
     delete ui;
 }
 
-void SettingsDialog::on_buttonBox_accepted()
+void SettingsDialog::onSaveBtnReleased()
 {
-    if (ui->m_nickname->text().trimmed().size() == 0)
+    Settings settings;
+
+    std::string newUserName = ui->m_username->text().trimmed().toStdString();
+    if (newUserName.size() == 0)
     {
-        ui->m_errorText->setText("No nickname");
         return;
     }
-    qDebug() << "OK";
 
-    Settings settings;
-    settings.generateKeys();
-    settings.m_username = ui->m_nickname->text().trimmed().toStdString();
+    if (!m_isNewUser.value())
+    {
+        settings.loadSettings();
+        if (settings.m_username == newUserName)
+        {
+            QDialog::accept();
+        }
+
+        m_chatClient.changeUsername(newUserName);
+    }
+    else
+    {
+        settings.generateKeys();
+    }
+    m_isNewUser.reset();
+
+    settings.m_username = newUserName;
     settings.saveSettings();
     QDialog::accept();
 }
 
 
-void SettingsDialog::on_buttonBox_rejected()
+void SettingsDialog::onCancelBtnReleased()
 {
-    qDebug() << "NO";
     QDialog::reject();
 }
 

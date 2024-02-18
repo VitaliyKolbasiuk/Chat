@@ -694,6 +694,13 @@ inline std::string parseEditMessageResponsePacket(const uint8_t* buffer, size_t 
     return message;
 }
 
+struct ChangeUsernameRequest
+{
+    enum { type = 110};
+
+    char m_newUsername[64];
+};
+
 struct TypeMap{
     std::map<int, std::string> m_typeMap;
     TypeMap(){
@@ -713,6 +720,7 @@ struct TypeMap{
         m_typeMap[DeleteMessageRequest::type] = "<DeleteMessageRequest>";
         m_typeMap[EditMessageRequest::type] = "<EditMessageRequest>";
         m_typeMap[EditMessageResponse::type] = "<EditMessageResponse>";
+        m_typeMap[ChangeUsernameRequest::type] = "<ChangeUsernameRequest>";
     }
 };
 
