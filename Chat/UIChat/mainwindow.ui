@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLineEdit" name="UserMessage">
+   <widget class="QLineEdit" name="m_userMessage">
     <property name="geometry">
      <rect>
       <x>180</x>
@@ -37,7 +37,7 @@
      <string>Settings</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="Exit">
+   <widget class="QPushButton" name="m_exitBtn">
     <property name="geometry">
      <rect>
       <x>630</x>
@@ -50,7 +50,7 @@
      <string>Exit</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="m_CreateRoom">
+   <widget class="QPushButton" name="m_createRoomBtn">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -116,7 +116,7 @@
      <string>Connect to Chat Room</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="m_deleteRoom">
+   <widget class="QPushButton" name="m_deleteRoomBtn">
     <property name="geometry">
      <rect>
       <x>100</x>
@@ -148,14 +148,14 @@
      <string>Delete</string>
     </property>
    </widget>
-   <zorder>UserMessage</zorder>
+   <zorder>m_userMessage</zorder>
    <zorder>m_settingsBtn</zorder>
-   <zorder>Exit</zorder>
+   <zorder>m_exitBtn</zorder>
    <zorder>m_chatRoomList</zorder>
    <zorder>m_chatRoomArea</zorder>
    <zorder>m_connectToChatRoomBtn</zorder>
-   <zorder>m_CreateRoom</zorder>
-   <zorder>m_deleteRoom</zorder>
+   <zorder>m_createRoomBtn</zorder>
+   <zorder>m_deleteRoomBtn</zorder>
    <zorder>m_deleteMessageBtn</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">

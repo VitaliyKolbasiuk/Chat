@@ -499,7 +499,7 @@ inline std::vector<ChatRoomRecord> parseChatRoomRecordPacket(const uint8_t* buff
     }
     records.reserve(vectorSize);
 
-    for (int i = 0; i < vectorSize; i++)
+    for (int i = 0; i < vectorSize; ++i)
     {
         MessageId messageId = *reinterpret_cast<const MessageId*>(ptr);
         ptr += sizeof(MessageId);

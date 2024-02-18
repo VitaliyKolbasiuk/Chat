@@ -42,6 +42,12 @@ void MainWindow::init()
     }
     m_chatClient = std::make_shared<ChatClient>(*m_settings);
 
+    connect(ui->m_exitBtn, &QPushButton::released, this, &MainWindow::onExitBtnReleased);
+
+    connect(ui->m_settingsBtn, &QPushButton::released, this, &MainWindow::onSaveSettingsBtnReleased);
+
+    connect(ui->m_createRoomBtn, &QPushButton::released, this, &MainWindow::onCreateRoomBtnReleased);
+
     connect(ui->m_chatRoomList, &QListWidget::currentRowChanged, this, [this](int currentRow){
         if (auto item = ui->m_chatRoomList->currentItem(); item != nullptr)
         {
@@ -117,9 +123,9 @@ void MainWindow::init()
         doUpdateChatRoomRecords(chatRoomId);
     });
     
-    connect(ui->m_connectToChatRoomBtn, &QPushButton::released, this, &MainWindow::on_ConnectToChatRoomBtn_released);
+    connect(ui->m_connectToChatRoomBtn, &QPushButton::released, this, &MainWindow::onConnectToChatRoomBtnReleased);
 
-    connect(ui->m_deleteRoom, &QPushButton::released, this, &MainWindow::on_m_deleteRoomBtn_released);
+    connect(ui->m_deleteRoomBtn, &QPushButton::released, this, &MainWindow::onDeleteRoomBtnReleased);
 
     connect(ui->m_chatRoomArea, &QListWidget::currentItemChanged, this, [this](const QListWidgetItem* item){
         if (item != nullptr)
@@ -155,8 +161,8 @@ void MainWindow::init()
     });
 
     connect(ui->m_chatRoomArea, &QListWidget::itemDoubleClicked, this, [this](){
-        ui->UserMessage->setText(ui->m_chatRoomArea->currentItem()->data(Qt::EditRole).toString());
-        ui->UserMessage->setCursorPosition(ui->m_chatRoomArea->currentItem()->data(Qt::EditRole).toString().size());
+        ui->m_userMessage->setText(ui->m_chatRoomArea->currentItem()->data(Qt::EditRole).toString());
+        ui->m_userMessage->setCursorPosition(ui->m_chatRoomArea->currentItem()->data(Qt::EditRole).toString().size());
         m_editedMessageId = ui->m_chatRoomArea->currentItem()->data(Qt::UserRole).toUInt();
     });
 
@@ -179,7 +185,7 @@ void MainWindow::init()
                                        QString::fromStdString(message) + "<br>" +
                                        currentItem->data(Qt::ToolTipRole).toString();
                     textBrowser->setText(htmlText);
-                    textBrowser->setFixedSize(QSize(ui->m_chatRoomArea->width() / 3, 70));
+                    textBrowser->setFixedSize(QSize(ui->m_chatRoomArea->width() / 2, 70));
                     ui->m_chatRoomArea->setItemWidget(currentItem, textBrowser);
                     break;
                 }
@@ -215,11 +221,14 @@ void MainWindow::configureUI()
     QString style = "background-color: #282e33; color : #e9f2f4; font : bold; QLabel { text-align: center; }";
 
     ui->centralwidget->setStyleSheet("background-color: #18191d");
-    ui->Exit->setStyleSheet(style);
+    ui->m_exitBtn->setStyleSheet(style);
     ui->m_chatRoomArea->setStyleSheet(style);
-    ui->UserMessage->setStyleSheet(style);
-    ui->m_CreateRoom->setStyleSheet("background-color: #282e33; color : lightgreen; font : bold; QLabel { text-align: center; }");
-    ui->m_deleteRoom->setStyleSheet("background-color: #282e33; color : red; font : bold; QLabel { text-align: center; }");
+    ui->m_userMessage->setStyleSheet(style);
+    ui->m_createRoomBtn->setStyleSheet("background-color: #282e33; color : lightgreen; font : bold; QLabel { text-align: center; }");
+    ui->m_deleteRoomBtn->setStyleSheet("background-color: #282e33; color : red; font : bold; QLabel { text-align: center; }");
+    ui->m_connectToChatRoomBtn->setStyleSheet(style);
+    ui->m_deleteMessageBtn->setStyleSheet(style);
+    ui->m_settingsBtn->setStyleSheet(style);
 
     ui->m_chatRoomList->setStyleSheet(style);
 
@@ -230,27 +239,27 @@ void MainWindow::onChatRoomListReceived()
 
 }
 
-void MainWindow::on_SaveSettings_released()
+void MainWindow::onSaveSettingsBtnReleased()
 {
     //m_settings->m_username = ui->TextUsername->text().toStdString();
     //m_settings->saveSettings();
 }
 
 
-void MainWindow::on_SendMessage_released()
+void MainWindow::onMessageSend()
 {
-    std::string userMessage = ui->UserMessage->text().toStdString();
+    std::string userMessage = ui->m_userMessage->text().toStdString();
     if (!userMessage.empty())
     {
         ChatRoomId chatRoomId(static_cast<ChatRoomId>(ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toUInt()));
         auto* packet = createSendTextMessagePacket(userMessage, chatRoomId, m_settings->m_keyPair.m_publicKey);
         m_tcpClient->sendBufferedPacket<SendTextMessagePacket>(packet);
 
-        ui->UserMessage->clear();
+        ui->m_userMessage->clear();
     }
 }
 
-void MainWindow::on_m_deleteRoomBtn_released()
+void MainWindow::onDeleteRoomBtnReleased()
 {
     if (ui->m_chatRoomList->currentItem() != nullptr)
     {
@@ -274,21 +283,21 @@ void MainWindow::on_m_deleteRoomBtn_released()
 }
 
 
-void MainWindow::on_Exit_released()
+void MainWindow::onExitBtnReleased()
 {
     m_chatClient->closeConnection();
 }
 
 
 
-void MainWindow::on_m_CreateRoom_released()
+void MainWindow::onCreateRoomBtnReleased()
 {
     CreateChatRoom createChatRoom(*m_chatClient, nullptr);
     createChatRoom.setModal(true);
     createChatRoom.exec();
 }
 
-void MainWindow::on_ConnectToChatRoomBtn_released()
+void MainWindow::onConnectToChatRoomBtnReleased()
 {
     ChatRoomConnect chatRoomConnect(*m_chatClient, nullptr);
     chatRoomConnect.setModal(true);
@@ -340,7 +349,7 @@ void MainWindow::showMessage(MessageId messageId, const std::string& username, c
     textBrowser->setHtml(htmlText);
     newItem->setSizeHint(textBrowser->sizeHint());
 
-    QSize size(ui->m_chatRoomArea->width() / 3, 70);
+    QSize size(ui->m_chatRoomArea->width() / 2, 70);
     newItem->setSizeHint(size);
     textBrowser->setFixedSize(size);
 
@@ -361,11 +370,11 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
 
 void MainWindow::onEnterKeyReleased()
 {
-    if (ui->UserMessage->hasFocus())
+    if (ui->m_userMessage->hasFocus())
     {
         if (!m_editedMessageId)
         {
-            on_SendMessage_released();
+            onMessageSend();
         }
         else
         {
@@ -377,14 +386,14 @@ void MainWindow::onEnterKeyReleased()
 
 void MainWindow::onMessageEdited()
 {
-    std::string editedMessage = ui->UserMessage->text().toStdString();
+    std::string editedMessage = ui->m_userMessage->text().toStdString();
     ChatRoomId chatRoomId(static_cast<ChatRoomId>(ui->m_chatRoomList->currentItem()->data(Qt::UserRole).toUInt()));
     MessageId  messageId(ui->m_chatRoomArea->currentItem()->data(Qt::UserRole).toUInt());
     auto* packet = createEditMessageRequestPacket(chatRoomId, messageId, editedMessage);
 
     m_tcpClient->sendBufferedPacket<EditMessageRequest>(packet);
 
-    ui->UserMessage->clear();
+    ui->m_userMessage->clear();
 }
 
 

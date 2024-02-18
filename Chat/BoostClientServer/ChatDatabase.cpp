@@ -235,7 +235,7 @@ public:
         m_query.exec();
 
         std::vector<ChatRoomRecord> records;
-        for (int i = 0; m_query.next() && i < messageNumber; i++)
+        for (int i = 0; m_query.next() && i < messageNumber; ++i)
         {
             int id = m_query.value(0).toInt();
             std::string message = m_query.value(1).toString().toStdString();

@@ -38,17 +38,17 @@ private:
 
 private slots:
 
-    void on_SaveSettings_released();
+    void onSaveSettingsBtnReleased();
 
-    void on_SendMessage_released();
+    void onExitBtnReleased();
 
-    void on_Exit_released();
+    void onMessageSend();
 
-    void on_ConnectToChatRoomBtn_released();
+    void onConnectToChatRoomBtnReleased();
 
-    void on_m_CreateRoom_released();
+    void onCreateRoomBtnReleased();
 
-    void on_m_deleteRoomBtn_released();
+    void onDeleteRoomBtnReleased();
 
     void onChatRoomListReceived();
 
